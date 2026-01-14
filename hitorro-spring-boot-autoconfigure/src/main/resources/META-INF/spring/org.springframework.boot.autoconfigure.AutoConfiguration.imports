@@ -1,0 +1,5 @@
+com.hitorro.spring.autoconfigure.service.HitorroServiceAutoConfiguration
+com.hitorro.spring.autoconfigure.properties.HitorroPropertySourceConfiguration
+com.hitorro.spring.autoconfigure.web.CommandEndpointAutoConfiguration
+com.hitorro.spring.autoconfigure.dms.DMSAutoConfiguration
+com.hitorro.spring.autoconfigure.cli.HitorroCliAutoConfiguration

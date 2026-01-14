@@ -1,0 +1,118 @@
+{
+  "groups": [
+    {
+      "name": "hitorro",
+      "type": "com.hitorro.spring.autoconfigure.HitorroProperties",
+      "description": "Configuration properties for Hitorro Spring Boot integration."
+    },
+    {
+      "name": "hitorro.services",
+      "type": "com.hitorro.spring.autoconfigure.HitorroProperties$Services",
+      "sourceType": "com.hitorro.spring.autoconfigure.HitorroProperties",
+      "description": "Hitorro service configuration."
+    },
+    {
+      "name": "hitorro.dms",
+      "type": "com.hitorro.spring.autoconfigure.HitorroProperties$Dms",
+      "sourceType": "com.hitorro.spring.autoconfigure.HitorroProperties",
+      "description": "Hitorro DMS configuration."
+    },
+    {
+      "name": "hitorro.commands",
+      "type": "com.hitorro.spring.autoconfigure.HitorroProperties$Commands",
+      "sourceType": "com.hitorro.spring.autoconfigure.HitorroProperties",
+      "description": "Hitorro command framework configuration."
+    },
+    {
+      "name": "hitorro.cli",
+      "type": "com.hitorro.spring.autoconfigure.HitorroProperties$Cli",
+      "sourceType": "com.hitorro.spring.autoconfigure.HitorroProperties",
+      "description": "Hitorro CLI configuration."
+    }
+  ],
+  "properties": [
+    {
+      "name": "hitorro.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether Hitorro integration should be enabled.",
+      "defaultValue": true
+    },
+    {
+      "name": "hitorro.services.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to auto-configure Hitorro services.",
+      "defaultValue": true
+    },
+    {
+      "name": "hitorro.services.startup-scripts",
+      "type": "java.lang.String",
+      "description": "Path to startup scripts to execute after service initialization."
+    },
+    {
+      "name": "hitorro.services.db-init",
+      "type": "java.lang.Boolean",
+      "description": "Whether to perform database initialization on startup.",
+      "defaultValue": false
+    },
+    {
+      "name": "hitorro.dms.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable DMS integration.",
+      "defaultValue": true
+    },
+    {
+      "name": "hitorro.dms.session-scope",
+      "type": "java.lang.String",
+      "description": "Scope for DMSSession beans: request, session, or prototype.",
+      "defaultValue": "request"
+    },
+    {
+      "name": "hitorro.dms.transaction-mode",
+      "type": "java.lang.String",
+      "description": "Transaction mode: spring-managed or hitorro-native.",
+      "defaultValue": "spring-managed"
+    },
+    {
+      "name": "hitorro.commands.rest.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable REST endpoints for command execution.",
+      "defaultValue": true
+    },
+    {
+      "name": "hitorro.commands.rest.base-path",
+      "type": "java.lang.String",
+      "description": "Base path for command REST endpoints.",
+      "defaultValue": "/api/commands"
+    },
+    {
+      "name": "hitorro.cli.native-enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable Hitorro's native CLI (telnet/SSH).",
+      "defaultValue": true
+    },
+    {
+      "name": "hitorro.cli.telnet-port",
+      "type": "java.lang.Integer",
+      "description": "Port for telnet CLI access.",
+      "defaultValue": 9000
+    },
+    {
+      "name": "hitorro.cli.ssh-port",
+      "type": "java.lang.Integer",
+      "description": "Port for SSH CLI access.",
+      "defaultValue": 9022
+    },
+    {
+      "name": "hitorro.cli.spring-shell-enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable Spring Shell integration.",
+      "defaultValue": true
+    },
+    {
+      "name": "hitorro.cli.actuator-enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable Actuator endpoint for commands.",
+      "defaultValue": true
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+# Example Hitorro Spring Boot Configuration
+# Copy this to your Spring Boot application's application.yml
+
+server:
+  port: 8080
+
+spring:
+  application:
+    name: my-hitorro-app
+
+# Hitorro Configuration
+hitorro:
+  # Global enable/disable
+  enabled: true
+  
+  # Service Configuration
+  services:
+    enabled: true
+    # Optional: startup scripts to run after initialization
+    startup-scripts: ${HT_BIN}/scripts/startup.scr
+    # Database initialization mode
+    db-init: false
+  
+  # DMS (Document Management System) Configuration
+  dms:
+    enabled: true
+    # Session scope: request (one per HTTP request), session (one per HTTP session), prototype (manual management)
+    session-scope: request
+    # Transaction mode: spring-managed (use @Transactional) or hitorro-native (use Hitorro's transactions)
+    transaction-mode: spring-managed
+  
+  # Command Framework Configuration
+  commands:
+    rest:
+      enabled: true
+      base-path: /api/commands
+  
+  # CLI Configuration - Multiple access modes
+  cli:
+    # Native Hitorro CLI (telnet/SSH)
+    native-enabled: true
+    telnet-port: 9000
+    ssh-port: 9022
+    # Spring Shell integration
+    spring-shell-enabled: true
+    # Actuator endpoints
+    actuator-enabled: true
+
+# Spring Boot Actuator (if using CLI actuator endpoint)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,hitorro
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# Logging
+logging:
+  level:
+    com.hitorro: INFO
+    com.hitorro.spring: DEBUG
+    org.springframework.boot: INFO
+
+# JPA/Hibernate (if using DMS)
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+    show-sql: false
+
+  # DataSource configuration
+  datasource:
+    url: jdbc:mysql://localhost:3306/hitorro
+    username: hitorro
+    password: changeme
+    driver-class-name: com.mysql.cj.jdbc.Driver
