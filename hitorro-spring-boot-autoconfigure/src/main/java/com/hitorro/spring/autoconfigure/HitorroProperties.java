@@ -194,6 +194,11 @@ public class HitorroProperties {
          * Transaction mode: spring-managed or hitorro-native.
          */
         private String transactionMode = "spring-managed";
+        
+        /**
+         * Database initialization configuration.
+         */
+        private DbInit dbInit = new DbInit();
 
         public boolean isEnabled() {
             return enabled;
@@ -217,6 +222,102 @@ public class HitorroProperties {
 
         public void setTransactionMode(String transactionMode) {
             this.transactionMode = transactionMode;
+        }
+        
+        public DbInit getDbInit() {
+            return dbInit;
+        }
+        
+        public void setDbInit(DbInit dbInit) {
+            this.dbInit = dbInit;
+        }
+        
+        /**
+         * Database initialization configuration for loading data from CSV files.
+         */
+        public static class DbInit {
+            /**
+             * Whether to run database initialization on startup.
+             */
+            private boolean enabled = false;
+            
+            /**
+             * Whether to fail application startup if data loading fails.
+             */
+            private boolean failOnError = false;
+            
+            /**
+             * List of datasets to load on startup.
+             */
+            private List<DataSet> dataSets = new ArrayList<>();
+            
+            public boolean isEnabled() {
+                return enabled;
+            }
+            
+            public void setEnabled(boolean enabled) {
+                this.enabled = enabled;
+            }
+            
+            public boolean isFailOnError() {
+                return failOnError;
+            }
+            
+            public void setFailOnError(boolean failOnError) {
+                this.failOnError = failOnError;
+            }
+            
+            public List<DataSet> getDataSets() {
+                return dataSets;
+            }
+            
+            public void setDataSets(List<DataSet> dataSets) {
+                this.dataSets = dataSets;
+            }
+            
+            /**
+             * Configuration for a single dataset to load.
+             */
+            public static class DataSet {
+                /**
+                 * Name of this dataset (for logging).
+                 */
+                private String name;
+                
+                /**
+                 * Path to CSV file (supports Spring Resource patterns like classpath:, file:, etc).
+                 */
+                private String csvFile;
+                
+                /**
+                 * Fully qualified class name of CSVHibernateLoaderConsumer to use.
+                 */
+                private String consumer;
+                
+                public String getName() {
+                    return name;
+                }
+                
+                public void setName(String name) {
+                    this.name = name;
+                }
+                
+                public String getCsvFile() {
+                    return csvFile;
+                }
+                
+                public void setCsvFile(String csvFile) {
+                    this.csvFile = csvFile;
+                }
+                
+                public String getConsumer() {
+                    return consumer;
+                }
+                
+                public void setConsumer(String consumer) {
+                    this.consumer = consumer;
+                }
+            }
         }
     }
     
