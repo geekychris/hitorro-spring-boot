@@ -59,6 +59,10 @@ public class ServiceContextManager implements ApplicationContextAware, Initializ
     @Override
     public void afterPropertiesSet() throws Exception {
         logger.info("Initializing Hitorro ServiceContext");
+        
+        // Initialize Hitorro properties system before ServiceContext
+        initializeHitorroProperties();
+        
         serviceContext.setInitDb(dbInit);
         
         String error = serviceContext.init();
@@ -72,6 +76,20 @@ public class ServiceContextManager implements ApplicationContextAware, Initializ
         // Log initialized services
         for (ServiceWrapper sw : serviceContext.getServices()) {
             logger.debug("  - {}: {}", sw.getShortName(), sw.getDescription());
+        }
+    }
+    
+    /**
+     * Initialize Hitorro's JVSProperties system.
+     * This must be done before ServiceContext.init() because services may access properties during initialization.
+     */
+    private void initializeHitorroProperties() {
+        // Create an empty JVS object for properties if not already set
+        com.hitorro.jsontypesystem.JVS properties = com.hitorro.jsontypesystem.propreaders.JVSProperties.getProperties();
+        if (properties == null) {
+            logger.info("Initializing Hitorro JVSProperties with empty configuration");
+            properties = new com.hitorro.jsontypesystem.JVS();
+            com.hitorro.jsontypesystem.propreaders.JVSProperties.setDefaultProperties(properties, false);
         }
     }
 
