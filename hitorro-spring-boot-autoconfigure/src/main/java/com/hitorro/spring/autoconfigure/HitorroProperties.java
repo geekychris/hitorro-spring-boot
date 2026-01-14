@@ -503,6 +503,15 @@ public class HitorroProperties {
         private boolean nlpEnabled = false;
         
         /**
+         * Path to type definitions directory.
+         * Type definitions are loaded from: ${type-definitions-path}/config/types/core/*.json
+         * If not set, uses HT_BIN environment variable or system property.
+         * 
+         * Example: /opt/hitorro or ${user.home}/hitorro
+         */
+        private String typeDefinitionsPath = null;
+        
+        /**
          * REST endpoint configuration for JVS.
          */
         private JvsRest rest = new JvsRest();
@@ -521,6 +530,14 @@ public class HitorroProperties {
         
         public void setNlpEnabled(boolean nlpEnabled) {
             this.nlpEnabled = nlpEnabled;
+        }
+        
+        public String getTypeDefinitionsPath() {
+            return typeDefinitionsPath;
+        }
+        
+        public void setTypeDefinitionsPath(String typeDefinitionsPath) {
+            this.typeDefinitionsPath = typeDefinitionsPath;
         }
         
         public JvsRest getRest() {

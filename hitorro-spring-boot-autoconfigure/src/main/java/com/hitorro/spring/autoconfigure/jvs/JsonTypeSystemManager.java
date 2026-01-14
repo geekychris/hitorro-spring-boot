@@ -68,10 +68,43 @@ public class JsonTypeSystemManager implements InitializingBean {
     public void afterPropertiesSet() throws Exception {
         logger.info("Initializing JsonTypeSystem");
         
+        // Configure type definition directory
+        // JVS loads type definitions from: ${HT_BIN}/config/types/core/*.json
+        String htBin = System.getProperty("HT_BIN");
+        if (htBin == null) {
+            htBin = System.getenv("HT_BIN");
+        }
+        
+        if (htBin == null) {
+            // Try to get from Spring configuration
+            String typeDir = properties.getJvs().getTypeDefinitionsPath();
+            if (typeDir != null && !typeDir.isEmpty()) {
+                // Extract parent directory (strip /config/types if present)
+                if (typeDir.endsWith("/config/types") || typeDir.endsWith("/config/types/")) {
+                    htBin = typeDir.substring(0, typeDir.indexOf("/config/types"));
+                } else if (typeDir.endsWith("/config")) {
+                    htBin = typeDir.substring(0, typeDir.indexOf("/config"));
+                } else {
+                    htBin = typeDir;
+                }
+                System.setProperty("HT_BIN", htBin);
+                logger.info("Set HT_BIN from configuration: {}", htBin);
+            } else {
+                // Default to classpath
+                logger.warn("HT_BIN not configured. Type definitions may not load correctly.");
+                logger.warn("Set hitorro.jvs.type-definitions-path or HT_BIN environment variable.");
+                logger.warn("Type definitions should be in: ${HT_BIN}/config/types/core/*.json");
+            }
+        } else {
+            logger.info("HT_BIN already configured: {}", htBin);
+        }
+        
         // Initialize the singleton
         this.jsonTypeSystem = JsonTypeSystem.getMe();
         
         logger.info("JsonTypeSystem initialized successfully");
+        logger.info("Type definitions path: {}/config/types/core/", htBin != null ? htBin : "<not set>");
+        
         if (properties.getJvs().isNlpEnabled()) {
             logger.info("NLP-aware features will be available once NLP integration initializes");
         }
