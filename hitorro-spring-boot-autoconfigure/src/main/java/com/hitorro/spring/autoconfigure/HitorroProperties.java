@@ -56,6 +56,11 @@ public class HitorroProperties {
      * CLI configuration.
      */
     private Cli cli = new Cli();
+    
+    /**
+     * REST endpoint configuration.
+     */
+    private Rest rest = new Rest();
 
     public boolean isEnabled() {
         return enabled;
@@ -95,6 +100,14 @@ public class HitorroProperties {
 
     public void setCli(Cli cli) {
         this.cli = cli;
+    }
+    
+    public Rest getRest() {
+        return rest;
+    }
+    
+    public void setRest(Rest rest) {
+        this.rest = rest;
     }
 
     public static class Services {
@@ -204,6 +217,50 @@ public class HitorroProperties {
 
         public void setTransactionMode(String transactionMode) {
             this.transactionMode = transactionMode;
+        }
+    }
+    
+    /**
+     * REST endpoint configuration.
+     */
+    public static class Rest {
+        /**
+         * Whether to enable REST endpoint discovery and mapping.
+         */
+        private boolean enabled = true;
+        
+        /**
+         * Base path for REST endpoints.
+         */
+        private String basePath = "/api/rest";
+        
+        /**
+         * Whether to expose internal commands via REST.
+         */
+        private boolean exposeInternal = false;
+        
+        public boolean isEnabled() {
+            return enabled;
+        }
+        
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+        
+        public String getBasePath() {
+            return basePath;
+        }
+        
+        public void setBasePath(String basePath) {
+            this.basePath = basePath;
+        }
+        
+        public boolean isExposeInternal() {
+            return exposeInternal;
+        }
+        
+        public void setExposeInternal(boolean exposeInternal) {
+            this.exposeInternal = exposeInternal;
         }
     }
 
