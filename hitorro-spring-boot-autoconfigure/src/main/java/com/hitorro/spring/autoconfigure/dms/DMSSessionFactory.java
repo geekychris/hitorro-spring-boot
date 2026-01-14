@@ -21,51 +21,33 @@
  */
 package com.hitorro.spring.autoconfigure.dms;
 
+import com.hitorro.basedms.session.DMSSession;
+import com.hitorro.util.typesystem.BaseSession;
+
 /**
- * Factory for creating and managing DMSSession instances in Spring context.
- * Preserves Hitorro's DMS session semantics and unified ID system while
- * integrating with Spring's lifecycle management.
+ * Spring-managed factory for creating and managing DMSSession instances.
+ * Delegates to Hitorro's native DMSSessionFactory while providing Spring integration.
  * 
- * Note: The actual DMSSession class is in hitorro-basedms module. This factory
- * provides a bridge between Hitorro's DMS and Spring's dependency injection.
+ * Preserves Hitorro's DMS session semantics and unified ID system.
  */
 public class DMSSessionFactory {
 
     /**
-     * Placeholder for DMS integration.
-     * The actual implementation will depend on the DMSSession API from hitorro-basedms.
+     * Creates a new DMSSession using Hitorro's native factory.
      * 
-     * This factory will:
-     * 1. Create DMSSession instances with proper lifecycle
-     * 2. Manage the unified ID system
-     * 3. Handle object retrieval through the DMS abstraction
-     * 4. Bridge with Spring's transaction management
+     * @return A new DMSSession instance
      */
-    public DMSSessionFactory() {
-        // Implementation will be added when hitorro-basedms is available in classpath
+    public DMSSession createSession() {
+        BaseSession session = com.hitorro.basedms.session.DMSSessionFactory.getFactory().getSession();
+        return (DMSSession) session;  // DMSSession extends BaseSession
     }
-
+    
     /**
-     * Creates a new DMSSession.
-     * Implementation details depend on hitorro-basedms module structure.
+     * Gets the native Hitorro DMSSessionFactory (returns BaseSessionFactory).
+     * 
+     * @return The Hitorro DMSSessionFactory instance as BaseSessionFactory
      */
-    public Object createSession() {
-        // TODO: Implement based on actual DMSSession API
-        // This will use Hitorro's DMSSession constructor/factory
-        throw new UnsupportedOperationException(
-            "DMSSession creation requires hitorro-basedms module. " +
-            "This will be implemented to delegate to Hitorro's DMS session management."
-        );
-    }
-
-    /**
-     * Gets the current thread-bound DMSSession if available.
-     */
-    public Object getCurrentSession() {
-        // TODO: Implement based on Hitorro's session management
-        throw new UnsupportedOperationException(
-            "DMSSession retrieval requires hitorro-basedms module. " +
-            "This will delegate to Hitorro's session management system."
-        );
+    public com.hitorro.util.typesystem.BaseSessionFactory getNativeFactory() {
+        return com.hitorro.basedms.session.DMSSessionFactory.getFactory();
     }
 }
