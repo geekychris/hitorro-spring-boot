@@ -61,6 +61,11 @@
             </dependency>
             <dependency>
                 <groupId>com.hitorro</groupId>
+                <artifactId>hitorro-text-core</artifactId>
+                <version>${hitorro.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.hitorro</groupId>
                 <artifactId>hitorro-basedms</artifactId>
                 <version>${hitorro.version}</version>
             </dependency>

@@ -44,18 +44,36 @@ public class HitorroCliAutoConfiguration {
     private static final Logger logger = LoggerFactory.getLogger(HitorroCliAutoConfiguration.class);
 
     /**
-     * Configure native Hitorro CLI (telnet/SSH).
-     * This preserves the original Hitorro CLI functionality.
+     * Create SpringBootCommandLine instance and register it globally.
+     * This is required for CLI sessions to work properly.
+     * Must be created BEFORE NativeCliManager.
      */
     @Bean
     @ConditionalOnProperty(prefix = "hitorro.cli", name = "native-enabled", havingValue = "true", matchIfMissing = true)
-    public NativeCliManager nativeCliManager(HitorroProperties properties) {
+    public SpringBootCommandLine springBootCommandLine(HitorroProperties properties) {
+        String appName = properties.getApplicationName() != null 
+            ? properties.getApplicationName() 
+            : "hitorro-spring-boot";
+        
+        logger.info("Registering SpringBootCommandLine: {}", appName);
+        return new SpringBootCommandLine(appName);
+    }
+
+    /**
+     * Configure native Hitorro CLI (telnet/SSH).
+     * This preserves the original Hitorro CLI functionality.
+     * Depends on SpringBootCommandLine being registered first.
+     */
+    @Bean
+    @ConditionalOnProperty(prefix = "hitorro.cli", name = "native-enabled", havingValue = "true", matchIfMissing = true)
+    public NativeCliManager nativeCliManager(HitorroProperties properties, SpringBootCommandLine commandLine) {
         int telnetPort = properties.getCli().getTelnetPort();
         int sshPort = properties.getCli().getSshPort();
         
         logger.info("Configuring Hitorro native CLI");
         logger.info("  Telnet port: {}", telnetPort);
         logger.info("  SSH port: {}", sshPort);
+        logger.info("  CommandLine: {}", commandLine);
         
         return new NativeCliManager(telnetPort, sshPort);
     }

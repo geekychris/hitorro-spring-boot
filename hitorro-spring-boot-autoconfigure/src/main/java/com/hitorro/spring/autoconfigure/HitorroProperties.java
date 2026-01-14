@@ -36,6 +36,26 @@ public class HitorroProperties {
      * Whether Hitorro services should be enabled.
      */
     private boolean enabled = true;
+    
+    /**
+     * Application name displayed in CLI prompt and logs.
+     * Defaults to spring.application.name if not set.
+     */
+    private String applicationName;
+    
+    /**
+     * Hitorro installation directory (HT_BIN). Contains config/, types/, etc.
+     * If not set, will check HT_BIN system property or environment variable.
+     * Example: /opt/hitorro or ${user.home}/hitorro
+     */
+    private String htBin;
+    
+    /**
+     * Hitorro home directory (HT_HOME). Contains runtime data, logs, cache.
+     * If not set, will check HT_HOME system property or environment variable.
+     * Example: /var/lib/hitorro or ${user.home}/hthome
+     */
+    private String htHome;
 
     /**
      * Service-related configuration.
@@ -73,6 +93,30 @@ public class HitorroProperties {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+    
+    public String getApplicationName() {
+        return applicationName;
+    }
+    
+    public void setApplicationName(String applicationName) {
+        this.applicationName = applicationName;
+    }
+    
+    public String getHtBin() {
+        return htBin;
+    }
+    
+    public void setHtBin(String htBin) {
+        this.htBin = htBin;
+    }
+    
+    public String getHtHome() {
+        return htHome;
+    }
+    
+    public void setHtHome(String htHome) {
+        this.htHome = htHome;
     }
 
     public Services getServices() {
