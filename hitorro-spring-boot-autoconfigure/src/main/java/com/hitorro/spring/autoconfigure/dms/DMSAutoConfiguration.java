@@ -55,6 +55,8 @@ import org.springframework.context.annotation.ScopedProxyMode;
 @ConditionalOnClass(name = "com.hitorro.basedms.session.DMSSession")
 @EnableConfigurationProperties(HitorroProperties.class)
 @ConditionalOnProperty(prefix = "hitorro.dms", name = "enabled", havingValue = "true", matchIfMissing = true)
+@org.springframework.boot.autoconfigure.AutoConfigureAfter(
+    com.hitorro.spring.autoconfigure.service.HitorroServiceAutoConfiguration.class)
 public class DMSAutoConfiguration {
 
     private static final Logger logger = LoggerFactory.getLogger(DMSAutoConfiguration.class);
@@ -62,32 +64,55 @@ public class DMSAutoConfiguration {
     /**
      * Create the DMSSessionFactory that will manage DMSSession instances.
      * Initializes the Hitorro DMS system including the Type system and services.
+     * 
+     * Note: If HibernateService is loaded via services configuration, it will handle
+     * initialization. This auto-config only runs when services are NOT configured.
      */
     @Bean
     public DMSSessionFactory dmsSessionFactory(
             HitorroProperties properties,
-            @Autowired(required = false) EntityManagerFactory entityManagerFactory) {
+            @Autowired(required = false) EntityManagerFactory entityManagerFactory,
+            @Autowired(required = false) com.hitorro.spring.autoconfigure.service.ServiceContextManager serviceContextManager) {
         
         logger.info("Configuring Hitorro DMS integration");
         logger.info("  Session scope: {}", properties.getDms().getSessionScope());
         logger.info("  Transaction mode: {}", properties.getDms().getTransactionMode());
         
         try {
-            // Step 1: Initialize Hitorro's Type system (required for soft references and GUID lookups)
-            logger.info("Initializing Hitorro Type system...");
-            initializeTypeSystem(entityManagerFactory);
-            
-            // Step 2: Initialize Hibernate SessionFactory bridge
-            if (entityManagerFactory != null) {
-                bridgeHibernateSessionFactory(entityManagerFactory);
-            } else {
-                logger.warn("No EntityManagerFactory available - DMS will not function properly");
+            // Check if HibernateService is already loaded via services
+            boolean hibernateServiceLoaded = false;
+            if (serviceContextManager != null) {
+                try {
+                    Class<?> hibernateServiceClass = Class.forName("com.hitorro.basedms.db.HibernateService");
+                    hibernateServiceLoaded = serviceContextManager.isServiceInitialized(hibernateServiceClass);
+                } catch (ClassNotFoundException e) {
+                    // HibernateService not available
+                }
             }
             
-            // Step 3: Initialize the native Hitorro DMSSessionFactory
-            initializeDMSSessionFactory();
-            
-            logger.info("Hitorro DMS integration fully initialized");
+            if (hibernateServiceLoaded) {
+                logger.info("HibernateService already loaded via services - skipping DMS auto-configuration");
+                logger.info("Type system and Hibernate are already initialized by HibernateService");
+            } else {
+                // HibernateService not loaded, we need to initialize DMS ourselves
+                logger.info("HibernateService not loaded - performing DMS initialization");
+                
+                // Step 1: Initialize Hitorro's Type system (required for soft references and GUID lookups)
+                logger.info("Initializing Hitorro Type system...");
+                initializeTypeSystem(entityManagerFactory);
+                
+                // Step 2: Initialize Hibernate SessionFactory bridge
+                if (entityManagerFactory != null) {
+                    bridgeHibernateSessionFactory(entityManagerFactory);
+                } else {
+                    logger.warn("No EntityManagerFactory available - DMS will not function properly");
+                }
+                
+                // Step 3: Initialize the native Hitorro DMSSessionFactory
+                initializeDMSSessionFactory();
+                
+                logger.info("Hitorro DMS integration fully initialized");
+            }
             
         } catch (Exception e) {
             logger.error("Error during DMS initialization", e);
