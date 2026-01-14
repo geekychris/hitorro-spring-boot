@@ -61,7 +61,7 @@ public class DMSAutoConfiguration {
 
     /**
      * Create the DMSSessionFactory that will manage DMSSession instances.
-     * Initializes the Hitorro DMS system if not already initialized.
+     * Initializes the Hitorro DMS system including the Type system and services.
      */
     @Bean
     public DMSSessionFactory dmsSessionFactory(
@@ -72,56 +72,108 @@ public class DMSAutoConfiguration {
         logger.info("  Session scope: {}", properties.getDms().getSessionScope());
         logger.info("  Transaction mode: {}", properties.getDms().getTransactionMode());
         
-        // Initialize Hibernate SessionFactory from Spring's EntityManagerFactory
-        if (entityManagerFactory != null) {
-            try {
-                // Get Hibernate SessionFactory from JPA EntityManagerFactory
-                SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
-                
-                // Set it in Hitorro's HibernateUtil using reflection
-                // HibernateUtil has a static field s_session that holds the default SessionFactory
-                java.lang.reflect.Field sessionField = 
-                    com.hitorro.basedms.db.HibernateUtil.class.getDeclaredField("s_session");
-                sessionField.setAccessible(true);
-                sessionField.set(null, sessionFactory);
-                
-                // Also put it in the map
-                java.lang.reflect.Field mapField = 
-                    com.hitorro.basedms.db.HibernateUtil.class.getDeclaredField("s_map");
-                mapField.setAccessible(true);
-                @SuppressWarnings("unchecked")
-                java.util.Map<String, SessionFactory> sessionMap = 
-                    (java.util.Map<String, SessionFactory>) mapField.get(null);
-                sessionMap.put("default", sessionFactory);
-                
-                logger.info("Successfully configured Hibernate SessionFactory for Hitorro DMS");
-            } catch (Exception e) {
-                logger.error("Error configuring Hibernate SessionFactory", e);
-            }
-        } else {
-            logger.warn("No EntityManagerFactory available - DMS will not function properly");
-        }
-        
-        // Initialize the native Hitorro DMSSessionFactory if needed
         try {
-            com.hitorro.util.typesystem.BaseSessionFactory nativeFactory =  
-                com.hitorro.basedms.session.DMSSessionFactory.getFactory();
+            // Step 1: Initialize Hitorro's Type system (required for soft references and GUID lookups)
+            logger.info("Initializing Hitorro Type system...");
+            initializeTypeSystem(entityManagerFactory);
             
-            if (nativeFactory == null) {
-                logger.info("Initializing Hitorro DMS native factory");
-                // Create and set the native factory
-                com.hitorro.basedms.session.DMSSessionFactory dmsFactory = 
-                    new com.hitorro.basedms.session.DMSSessionFactory();
-                com.hitorro.util.typesystem.BaseSessionFactory.setFactory(dmsFactory);
-                logger.info("Successfully initialized Hitorro DMS native factory");
+            // Step 2: Initialize Hibernate SessionFactory bridge
+            if (entityManagerFactory != null) {
+                bridgeHibernateSessionFactory(entityManagerFactory);
             } else {
-                logger.info("Using existing Hitorro DMS native factory");
+                logger.warn("No EntityManagerFactory available - DMS will not function properly");
             }
+            
+            // Step 3: Initialize the native Hitorro DMSSessionFactory
+            initializeDMSSessionFactory();
+            
+            logger.info("Hitorro DMS integration fully initialized");
+            
         } catch (Exception e) {
-            logger.error("Error initializing DMS factory", e);
+            logger.error("Error during DMS initialization", e);
         }
         
         return new DMSSessionFactory();
+    }
+    
+    /**
+     * Initialize Hitorro's Type system which is required for soft references and GUID lookups.
+     */
+    private void initializeTypeSystem(EntityManagerFactory entityManagerFactory) throws Exception {
+        logger.info("  - Initializing TypeManager...");
+        
+        // Get all entity classes from Spring's EntityManagerFactory
+        if (entityManagerFactory != null) {
+            SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
+            
+            // Get TypeManager instance
+            com.hitorro.util.typesystem.TypeManager tm = 
+                com.hitorro.util.typesystem.TypeManager.getTypeManager();
+            
+            // Register all entity classes with TypeManager
+            // This enables the Type system to understand entity metadata and support soft references
+            sessionFactory.getMetamodel().getEntities().forEach(entityType -> {
+                Class<?> javaType = entityType.getJavaType();
+                try {
+                    tm.addType(javaType);
+                    logger.debug("  - Registered type: {}", javaType.getName());
+                } catch (Exception e) {
+                    logger.warn("Could not register type {}: {}", javaType.getName(), e.getMessage());
+                }
+            });
+            
+            // Initialize type objects (builds internal metadata structures)
+            tm.initTypeObjects();
+            logger.info("  - TypeManager initialized with {} entity types", 
+                tm.getListOfPersistedTypes().size());
+        }
+    }
+    
+    /**
+     * Bridge Spring's Hibernate SessionFactory to Hitorro's HibernateUtil.
+     */
+    private void bridgeHibernateSessionFactory(EntityManagerFactory entityManagerFactory) throws Exception {
+        logger.info("  - Bridging Hibernate SessionFactory...");
+        
+        // Get Hibernate SessionFactory from JPA EntityManagerFactory
+        SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
+        
+        // Set it in Hitorro's HibernateUtil using reflection
+        java.lang.reflect.Field sessionField = 
+            com.hitorro.basedms.db.HibernateUtil.class.getDeclaredField("s_session");
+        sessionField.setAccessible(true);
+        sessionField.set(null, sessionFactory);
+        
+        // Also put it in the map
+        java.lang.reflect.Field mapField = 
+            com.hitorro.basedms.db.HibernateUtil.class.getDeclaredField("s_map");
+        mapField.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, SessionFactory> sessionMap = 
+            (java.util.Map<String, SessionFactory>) mapField.get(null);
+        sessionMap.put("default", sessionFactory);
+        
+        logger.info("  - Hibernate SessionFactory bridge established");
+    }
+    
+    /**
+     * Initialize the native Hitorro DMSSessionFactory.
+     */
+    private void initializeDMSSessionFactory() {
+        logger.info("  - Initializing DMSSessionFactory...");
+        
+        com.hitorro.util.typesystem.BaseSessionFactory nativeFactory =  
+            com.hitorro.basedms.session.DMSSessionFactory.getFactory();
+        
+        if (nativeFactory == null) {
+            // Create and set the native factory
+            com.hitorro.basedms.session.DMSSessionFactory dmsFactory = 
+                new com.hitorro.basedms.session.DMSSessionFactory();
+            com.hitorro.util.typesystem.BaseSessionFactory.setFactory(dmsFactory);
+            logger.info("  - DMSSessionFactory created and registered");
+        } else {
+            logger.info("  - Using existing DMSSessionFactory");
+        }
     }
 
     /**
