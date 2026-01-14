@@ -61,6 +61,11 @@ public class HitorroProperties {
      * REST endpoint configuration.
      */
     private Rest rest = new Rest();
+    
+    /**
+     * JSON Type System configuration.
+     */
+    private Jvs jvs = new Jvs();
 
     public boolean isEnabled() {
         return enabled;
@@ -108,6 +113,14 @@ public class HitorroProperties {
     
     public void setRest(Rest rest) {
         this.rest = rest;
+    }
+    
+    public Jvs getJvs() {
+        return jvs;
+    }
+    
+    public void setJvs(Jvs jvs) {
+        this.jvs = jvs;
     }
 
     public static class Services {
@@ -472,6 +485,81 @@ public class HitorroProperties {
 
         public void setActuatorEnabled(boolean actuatorEnabled) {
             this.actuatorEnabled = actuatorEnabled;
+        }
+    }
+    
+    /**
+     * JSON Type System configuration.
+     */
+    public static class Jvs {
+        /**
+         * Whether to enable JVS integration.
+         */
+        private boolean enabled = true;
+        
+        /**
+         * Whether to enable NLP features (WordNet, OpenNLP).
+         */
+        private boolean nlpEnabled = false;
+        
+        /**
+         * REST endpoint configuration for JVS.
+         */
+        private JvsRest rest = new JvsRest();
+        
+        public boolean isEnabled() {
+            return enabled;
+        }
+        
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+        
+        public boolean isNlpEnabled() {
+            return nlpEnabled;
+        }
+        
+        public void setNlpEnabled(boolean nlpEnabled) {
+            this.nlpEnabled = nlpEnabled;
+        }
+        
+        public JvsRest getRest() {
+            return rest;
+        }
+        
+        public void setRest(JvsRest rest) {
+            this.rest = rest;
+        }
+        
+        /**
+         * JVS REST endpoint configuration.
+         */
+        public static class JvsRest {
+            /**
+             * Whether to enable REST endpoints for JVS.
+             */
+            private boolean enabled = false;
+            
+            /**
+             * Base path for JVS REST endpoints.
+             */
+            private String basePath = "/api/jvs";
+            
+            public boolean isEnabled() {
+                return enabled;
+            }
+            
+            public void setEnabled(boolean enabled) {
+                this.enabled = enabled;
+            }
+            
+            public String getBasePath() {
+                return basePath;
+            }
+            
+            public void setBasePath(String basePath) {
+                this.basePath = basePath;
+            }
         }
     }
 }
