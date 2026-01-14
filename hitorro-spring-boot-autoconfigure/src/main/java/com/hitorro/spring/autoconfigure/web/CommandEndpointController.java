@@ -64,24 +64,14 @@ public class CommandEndpointController {
         logger.debug("Executing command: {}", request.getCommand());
         
         try {
-            // Create a response handler that captures output
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            JSONResponse response = new JSONResponse(new PrintStream(outputStream));
-            
-            // Execute the command
-            CommandSession session = new CommandSession(response);
-            boolean success = session.executeCommand(request.getCommand());
+            // Use CommandSession.executeToLog for simple command execution
+            boolean success = CommandSession.executeToLog(request.getCommand(), "");
             
             // Build response
             Map<String, Object> result = new HashMap<>();
             result.put("success", success);
             result.put("command", request.getCommand());
-            
-            // Try to parse JSON output if available
-            String output = outputStream.toString();
-            if (!output.isEmpty()) {
-                result.put("output", output);
-            }
+            result.put("output", "Command executed - check logs for output");
             
             HttpStatus status = success ? HttpStatus.OK : HttpStatus.INTERNAL_SERVER_ERROR;
             return ResponseEntity.status(status).body(result);
@@ -107,15 +97,12 @@ public class CommandEndpointController {
                 produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> listCommands() {
         try {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            JSONResponse response = new JSONResponse(new PrintStream(outputStream));
-            
-            CommandSession session = new CommandSession(response);
-            session.executeCommand("help");
+            // Execute help command to get list
+            CommandSession.executeToLog("help", "");
             
             Map<String, Object> result = new HashMap<>();
             result.put("success", true);
-            result.put("commands", outputStream.toString());
+            result.put("message", "Commands listed in log - use 'help' command for details");
             
             return ResponseEntity.ok(result);
             

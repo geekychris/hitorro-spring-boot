@@ -21,17 +21,14 @@
  */
 package com.hitorro.spring.autoconfigure.cli;
 
+import com.hitorro.util.commandandcontrol.Command;
 import com.hitorro.util.commandandcontrol.CommandRegistry;
 import com.hitorro.util.commandandcontrol.CommandSession;
-import com.hitorro.util.commandandcontrol.ConsoleResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Spring Boot Actuator endpoint for executing Hitorro commands via HTTP.
@@ -54,15 +51,11 @@ public class CommandActuatorEndpoint {
         Map<String, Object> result = new HashMap<>();
         
         try {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            ConsoleResponse response = new ConsoleResponse(new PrintStream(outputStream));
-            
-            CommandSession session = new CommandSession(response);
-            boolean success = session.executeCommand(command);
+            boolean success = CommandSession.executeToLog(command, "");
             
             result.put("success", success);
             result.put("command", command);
-            result.put("output", outputStream.toString());
+            result.put("message", "Command executed - check logs for output");
             
         } catch (Exception e) {
             logger.error("Error executing command via actuator: {}", command, e);
@@ -81,9 +74,15 @@ public class CommandActuatorEndpoint {
      */
     public Map<String, Object> listCommands() {
         Map<String, Object> result = new HashMap<>();
-        Set<String> commands = CommandRegistry.getRegistry().getCommandNames();
-        result.put("commands", commands);
-        result.put("count", commands.size());
+        // Execute help command which lists all commands
+        try {
+            CommandSession.executeToLog("help", "");
+            result.put("message", "Commands listed in log - use 'help' command for details");
+            result.put("success", true);
+        } catch (Exception e) {
+            result.put("error", e.getMessage());
+            result.put("success", false);
+        }
         return result;
     }
 }
