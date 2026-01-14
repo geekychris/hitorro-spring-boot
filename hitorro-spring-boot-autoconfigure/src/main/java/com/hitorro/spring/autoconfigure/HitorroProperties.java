@@ -23,6 +23,9 @@ package com.hitorro.spring.autoconfigure;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Configuration properties for Hitorro Spring Boot integration.
  */
@@ -110,6 +113,18 @@ public class HitorroProperties {
          */
         private boolean dbInit = false;
 
+        /**
+         * List of service class names or short names to load.
+         * Example: ["com.hitorro.base.service.BasicService", "hibernate", "typesystem"]
+         */
+        private List<String> load = new ArrayList<>();
+
+        /**
+         * Server type for HTServer-style loading (reads services.{type} from properties).
+         * If set, services will be loaded from services.{serverType} configuration.
+         */
+        private String serverType = null;
+
         public boolean isEnabled() {
             return enabled;
         }
@@ -132,6 +147,22 @@ public class HitorroProperties {
 
         public void setDbInit(boolean dbInit) {
             this.dbInit = dbInit;
+        }
+
+        public List<String> getLoad() {
+            return load;
+        }
+
+        public void setLoad(List<String> load) {
+            this.load = load;
+        }
+
+        public String getServerType() {
+            return serverType;
+        }
+
+        public void setServerType(String serverType) {
+            this.serverType = serverType;
         }
     }
 

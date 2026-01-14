@@ -21,6 +21,8 @@
  */
 package com.hitorro.spring.autoconfigure.service;
 
+import com.hitorro.spring.autoconfigure.HitorroProperties;
+import com.hitorro.util.core.classes.ClassUtil;
 import com.hitorro.util.startupframework.ServiceContext;
 import com.hitorro.util.startupframework.ServiceWrapper;
 import org.slf4j.Logger;
@@ -42,12 +44,12 @@ public class ServiceContextManager implements ApplicationContextAware, Initializ
     private static final Logger logger = LoggerFactory.getLogger(ServiceContextManager.class);
 
     private final ServiceContext serviceContext;
-    private final boolean dbInit;
+    private final HitorroProperties properties;
     private ApplicationContext applicationContext;
 
-    public ServiceContextManager(boolean dbInit) {
+    public ServiceContextManager(HitorroProperties properties) {
         this.serviceContext = ServiceContext.getSC();
-        this.dbInit = dbInit;
+        this.properties = properties;
         ServiceContext.setServiceContext(this.serviceContext);
     }
 
@@ -63,7 +65,11 @@ public class ServiceContextManager implements ApplicationContextAware, Initializ
         // Initialize Hitorro properties system before ServiceContext
         initializeHitorroProperties();
         
-        serviceContext.setInitDb(dbInit);
+        // Load services from configuration
+        loadServicesFromConfiguration();
+        
+        // Initialize service context
+        serviceContext.setInitDb(properties.getServices().isDbInit());
         
         String error = serviceContext.init();
         if (error != null) {
@@ -75,7 +81,92 @@ public class ServiceContextManager implements ApplicationContextAware, Initializ
         
         // Log initialized services
         for (ServiceWrapper sw : serviceContext.getServices()) {
-            logger.debug("  - {}: {}", sw.getShortName(), sw.getDescription());
+            logger.info("  ✓ {}: {}", sw.getShortName(), sw.getDescription());
+        }
+    }
+    
+    /**
+     * Load services from Spring Boot configuration.
+     * Supports multiple configuration patterns:
+     * 1. Explicit list: hitorro.services.load=[service1, service2]
+     * 2. HTServer pattern: hitorro.services.server-type=webapp (reads services.webapp)
+     * 3. Auto-discovery: Scans for @ServiceDefinition annotated classes (future)
+     */
+    private void loadServicesFromConfiguration() {
+        List<String> servicesToLoad = properties.getServices().getLoad();
+        String serverType = properties.getServices().getServerType();
+        
+        if (serverType != null && !serverType.isEmpty()) {
+            // HTServer-style loading: read services from services.{type} in JVS
+            logger.info("Loading services using HTServer pattern (type: {})", serverType);
+            loadServicesViaHTServer(serverType);
+        } else if (servicesToLoad != null && !servicesToLoad.isEmpty()) {
+            // Explicit list loading
+            logger.info("Loading {} services from configuration", servicesToLoad.size());
+            for (String serviceName : servicesToLoad) {
+                loadService(serviceName);
+            }
+        } else {
+            logger.info("No services configured to load. Use hitorro.services.load or hitorro.services.server-type");
+        }
+    }
+    
+    /**
+     * Load services using HTServer pattern (reads from services.{type} in properties).
+     */
+    private void loadServicesViaHTServer(String serverType) {
+        try {
+            // Add HTServer which will dynamically load services based on serverType
+            Class<?> htServerClass = ClassUtil.getClassForName(
+                "com.hitorro.util.startupframework.HTServer", null);
+            
+            if (htServerClass == null) {
+                logger.warn("HTServer class not found. HTServer pattern requires hitorro-util on classpath.");
+                return;
+            }
+            
+            // TODO: Set the servertype property for HTServer to read
+            // The JVS needs to have servertype set before HTServer init
+            // For now, users should set it in application.yml or JVS file
+            logger.info("Note: Ensure 'servertype' property is set in configuration for HTServer");
+            
+            logger.info("Adding HTServer with servertype: {}", serverType);
+            boolean added = serviceContext.addModule(htServerClass.getName());
+            if (!added) {
+                logger.warn("Failed to add HTServer module");
+            }
+        } catch (Exception e) {
+            logger.error("Error loading services via HTServer pattern", e);
+        }
+    }
+    
+    /**
+     * Load a single service by class name or short name.
+     */
+    private void loadService(String serviceName) {
+        try {
+            serviceName = serviceName.trim();
+            
+            // Try to resolve as class name first
+            Class<?> serviceClass = ClassUtil.getClassForName(serviceName, null);
+            
+            if (serviceClass != null) {
+                logger.info("  Loading service: {} ({})", serviceName, serviceClass.getSimpleName());
+                boolean added = serviceContext.addModule(serviceName);
+                if (!added) {
+                    logger.warn("  Failed to add service: {}", serviceName);
+                }
+            } else {
+                // Try to resolve by short name
+                ServiceWrapper existing = serviceContext.getInitializedServiceByShortname(serviceName);
+                if (existing == null) {
+                    logger.warn("  Service not found: {} (not a valid class name or short name)", serviceName);
+                } else {
+                    logger.info("  Service already loaded: {}", serviceName);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("  Error loading service: {}", serviceName, e);
         }
     }
     

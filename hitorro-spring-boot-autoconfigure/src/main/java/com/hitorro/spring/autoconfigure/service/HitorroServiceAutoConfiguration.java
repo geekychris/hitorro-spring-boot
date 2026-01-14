@@ -46,12 +46,12 @@ public class HitorroServiceAutoConfiguration {
 
     /**
      * Create the ServiceContextManager that manages Hitorro's ServiceContext lifecycle.
+     * This will load and initialize services based on configuration.
      */
     @Bean
     public ServiceContextManager serviceContextManager(HitorroProperties properties) {
         logger.info("Creating Hitorro ServiceContextManager");
-        boolean dbInit = properties.getServices().isDbInit();
-        return new ServiceContextManager(dbInit);
+        return new ServiceContextManager(properties);
     }
 
     /**
