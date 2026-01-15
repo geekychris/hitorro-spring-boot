@@ -78,6 +78,13 @@ public class HitorroProperties {
     private Cli cli = new Cli();
     
     /**
+     * Custom Hitorro properties that will be converted to JVSProperties.
+     * Use dot notation for nested properties (e.g., "network.disablelocalhostcheck").
+     * These are passed directly to the Hitorro property system.
+     */
+    private java.util.Map<String, Object> hitorroProperties = new java.util.HashMap<>();
+    
+    /**
      * REST endpoint configuration.
      */
     private Rest rest = new Rest();
@@ -165,6 +172,14 @@ public class HitorroProperties {
     
     public void setJvs(Jvs jvs) {
         this.jvs = jvs;
+    }
+    
+    public java.util.Map<String, Object> getHitorroProperties() {
+        return hitorroProperties;
+    }
+    
+    public void setHitorroProperties(java.util.Map<String, Object> hitorroProperties) {
+        this.hitorroProperties = hitorroProperties;
     }
 
     public static class Services {

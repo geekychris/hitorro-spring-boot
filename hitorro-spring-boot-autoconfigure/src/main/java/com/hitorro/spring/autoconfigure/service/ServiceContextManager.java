@@ -171,16 +171,74 @@ public class ServiceContextManager implements ApplicationContextAware, Initializ
     }
     
     /**
-     * Initialize Hitorro's JVSProperties system.
-     * This must be done before ServiceContext.init() because services may access properties during initialization.
+     * Initialize Hitorro's JVSProperties system using the same approach as CommandLine.
+     * This loads properties from multiple sources in order:
+     * 1. System arguments
+     * 2. HT_BIN/config directory
+     * 3. HT_HOME/config directory (where hibernate.json, types, collections, etc. live)
+     * 4. Spring Boot custom properties overlay
      */
     private void initializeHitorroProperties() {
-        // Create an empty JVS object for properties if not already set
-        com.hitorro.jsontypesystem.JVS properties = com.hitorro.jsontypesystem.propreaders.JVSProperties.getProperties();
-        if (properties == null) {
-            logger.info("Initializing Hitorro JVSProperties with empty configuration");
-            properties = new com.hitorro.jsontypesystem.JVS();
-            com.hitorro.jsontypesystem.propreaders.JVSProperties.setDefaultProperties(properties, false);
+        com.hitorro.jsontypesystem.JVS existingProperties = com.hitorro.jsontypesystem.propreaders.JVSProperties.getProperties();
+        if (existingProperties == null) {
+            logger.info("Initializing Hitorro JVSProperties from config directories");
+            
+            try {
+                // Create empty JVS and set it temporarily so property readers can reference it
+                com.hitorro.jsontypesystem.JVS props = new com.hitorro.jsontypesystem.JVS();
+                com.hitorro.jsontypesystem.propreaders.JVSProperties.setDefaultProperties(props, false);
+                
+                // Create property loaders just like CommandLine does
+                com.hitorro.jsontypesystem.propreaders.JVSPropertiesReader[] propLoaders = {
+                    new com.hitorro.jsontypesystem.propreaders.JVSSystemArgsPropertyReader(),
+                    new com.hitorro.jsontypesystem.propreaders.JVSDirectoryReadingPropertiesReader(
+                        com.hitorro.jsontypesystem.propreaders.JVSDirectoryType.Bin, false),
+                    new com.hitorro.jsontypesystem.propreaders.JVSDirectoryReadingPropertiesReader(
+                        com.hitorro.jsontypesystem.propreaders.JVSDirectoryType.Home, true)
+                };
+                
+                // Load properties from all sources
+                // Pass props as both the accumulator AND as cmdLineArgs so property readers can reference it
+                for (com.hitorro.jsontypesystem.propreaders.JVSPropertiesReader reader : propLoaders) {
+                    reader.getProperties(props, props);
+                }
+                
+                // Overlay Spring Boot custom properties if provided
+                if (properties.getHitorroProperties() != null && !properties.getHitorroProperties().isEmpty()) {
+                    logger.info("Overlaying {} custom properties from Spring configuration", 
+                               properties.getHitorroProperties().size());
+                    
+                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                    com.fasterxml.jackson.databind.node.ObjectNode customNode = mapper.createObjectNode();
+                    addMapToNode(customNode, properties.getHitorroProperties(), mapper, "");
+                    
+                    // Merge custom properties into loaded props
+                    com.hitorro.jsontypesystem.JVS customProps = new com.hitorro.jsontypesystem.JVS(customNode);
+                    props.merge(customProps);
+                }
+                
+                // Resolve variables in properties (e.g., ${HT_HOME})
+                props.resolveVariables(props);
+                
+                // Set as default properties
+                com.hitorro.jsontypesystem.propreaders.JVSProperties.setDefaultProperties(props, false);
+                
+                logger.info("✓ JVSProperties initialized from:");
+                logger.info("  - System arguments");
+                logger.info("  - {}/config", properties.getHtBin() != null ? properties.getHtBin() : "HT_BIN");
+                logger.info("  - {}/config", properties.getHtHome() != null ? properties.getHtHome() : "HT_HOME");
+                if (properties.getHitorroProperties() != null && !properties.getHitorroProperties().isEmpty()) {
+                    logger.info("  - Spring Boot custom properties");
+                }
+                
+            } catch (Exception e) {
+                logger.error("Failed to load JVSProperties from config directories", e);
+                // Fall back to empty properties
+                com.hitorro.jsontypesystem.JVS fallbackProps = new com.hitorro.jsontypesystem.JVS();
+                com.hitorro.jsontypesystem.propreaders.JVSProperties.setDefaultProperties(fallbackProps, false);
+            }
+        } else {
+            logger.info("JVSProperties already initialized");
         }
     }
 
@@ -236,5 +294,36 @@ public class ServiceContextManager implements ApplicationContextAware, Initializ
      */
     public List<ServiceWrapper> getAllServices() {
         return serviceContext.getServices();
+    }
+    
+    /**
+     * Recursively add map entries to ObjectNode.
+     */
+    @SuppressWarnings("unchecked")
+    private void addMapToNode(com.fasterxml.jackson.databind.node.ObjectNode node, 
+                               java.util.Map<String, Object> map,
+                               com.fasterxml.jackson.databind.ObjectMapper mapper,
+                               String prefix) {
+        for (java.util.Map.Entry<String, Object> entry : map.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            String fullPath = prefix.isEmpty() ? key : prefix + "." + key;
+            
+            if (value instanceof java.util.Map) {
+                // Nested map - recurse
+                com.fasterxml.jackson.databind.node.ObjectNode nestedNode = mapper.createObjectNode();
+                node.set(key, nestedNode);
+                addMapToNode(nestedNode, (java.util.Map<String, Object>) value, mapper, fullPath);
+            } else if (value instanceof Boolean) {
+                node.put(key, (Boolean) value);
+                logger.info("  - {}: {}", fullPath, value);
+            } else if (value instanceof Number) {
+                node.put(key, ((Number) value).intValue());
+                logger.info("  - {}: {}", fullPath, value);
+            } else if (value instanceof String) {
+                node.put(key, (String) value);
+                logger.info("  - {}: {}", fullPath, value);
+            }
+        }
     }
 }

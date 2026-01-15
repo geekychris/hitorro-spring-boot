@@ -37,6 +37,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 
@@ -57,6 +58,7 @@ import org.springframework.context.annotation.ScopedProxyMode;
 @ConditionalOnProperty(prefix = "hitorro.dms", name = "enabled", havingValue = "true", matchIfMissing = true)
 @org.springframework.boot.autoconfigure.AutoConfigureAfter(
     com.hitorro.spring.autoconfigure.service.HitorroServiceAutoConfiguration.class)
+@Import(HibernateIntegratorRegistrar.class)
 public class DMSAutoConfiguration {
 
     private static final Logger logger = LoggerFactory.getLogger(DMSAutoConfiguration.class);
@@ -109,9 +111,11 @@ public class DMSAutoConfiguration {
                 }
                 
                 // Step 3: Initialize the native Hitorro DMSSessionFactory
+                // NOTE: HTIntegrator is registered via HibernateIntegratorRegistrar component
                 initializeDMSSessionFactory();
                 
                 logger.info("Hitorro DMS integration fully initialized");
+                logger.info("  (HTIntegrator registered via HibernatePropertiesCustomizer for OnTrigger support)");
             }
             
         } catch (Exception e) {
