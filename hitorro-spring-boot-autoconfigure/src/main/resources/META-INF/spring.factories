@@ -1,3 +1,7 @@
 # Environment Post Processors
 org.springframework.boot.env.EnvironmentPostProcessor=\
 com.hitorro.spring.autoconfigure.HitorroEnvironmentPostProcessor
+
+# Auto Configuration
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.hitorro.spring.autoconfigure.filesystem.FileSystemAutoConfiguration
