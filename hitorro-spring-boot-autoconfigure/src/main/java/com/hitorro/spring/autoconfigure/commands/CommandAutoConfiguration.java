@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 
 /**
@@ -41,6 +42,18 @@ import org.springframework.context.annotation.Bean;
 public class CommandAutoConfiguration {
 
     private static final Logger logger = LoggerFactory.getLogger(CommandAutoConfiguration.class);
+
+    /**
+     * Scan for @CommandDef annotated methods in Spring beans and core classes.
+     * This discovers commands from:
+     * - Static methods in Hitorro core classes (like Env.quit)
+     * - Instance methods in Spring beans
+     */
+    @Bean
+    public CommandDefScanner commandDefScanner(ApplicationContext applicationContext) {
+        logger.info("Creating @CommandDef scanner");
+        return new CommandDefScanner(applicationContext);
+    }
 
     /**
      * Create the command registration manager that scans services for @CommandDef methods.
