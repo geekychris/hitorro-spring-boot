@@ -45,13 +45,26 @@ public class HitorroServiceAutoConfiguration {
     private static final Logger logger = LoggerFactory.getLogger(HitorroServiceAutoConfiguration.class);
 
     /**
+     * Create the Spring database config provider.
+     * This makes Spring's DataSource the single source of truth for database configuration.
+     */
+    @Bean
+    public SpringDatabaseConfigProvider springDatabaseConfigProvider(
+            javax.sql.DataSource dataSource,
+            org.springframework.boot.autoconfigure.jdbc.DataSourceProperties dataSourceProperties) {
+        logger.info("Creating Spring Database Config Provider");
+        return new SpringDatabaseConfigProvider(dataSource, dataSourceProperties);
+    }
+
+    /**
      * Create the ServiceContextManager that manages Hitorro's ServiceContext lifecycle.
      * This will load and initialize services based on configuration.
      */
     @Bean
-    public ServiceContextManager serviceContextManager(HitorroProperties properties) {
+    public ServiceContextManager serviceContextManager(HitorroProperties properties, 
+                                                        SpringDatabaseConfigProvider databaseConfigProvider) {
         logger.info("Creating Hitorro ServiceContextManager");
-        return new ServiceContextManager(properties);
+        return new ServiceContextManager(properties, databaseConfigProvider);
     }
 
     /**

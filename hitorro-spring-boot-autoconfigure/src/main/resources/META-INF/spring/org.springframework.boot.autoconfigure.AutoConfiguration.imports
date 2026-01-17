@@ -3,6 +3,7 @@ com.hitorro.spring.autoconfigure.properties.HitorroPropertySourceConfiguration
 com.hitorro.spring.autoconfigure.commands.CommandAutoConfiguration
 com.hitorro.spring.autoconfigure.web.CommandEndpointAutoConfiguration
 com.hitorro.spring.autoconfigure.dms.DMSAutoConfiguration
+com.hitorro.spring.autoconfigure.integration.IntegrationEventsAutoConfiguration
 com.hitorro.spring.autoconfigure.cli.HitorroCliAutoConfiguration
 com.hitorro.spring.autoconfigure.rest.HitorroRestAutoConfiguration
 com.hitorro.spring.autoconfigure.dbinit.DBInitAutoConfiguration

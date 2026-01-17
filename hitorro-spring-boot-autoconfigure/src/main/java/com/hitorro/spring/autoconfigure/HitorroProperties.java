@@ -93,6 +93,11 @@ public class HitorroProperties {
      * JSON Type System configuration.
      */
     private Jvs jvs = new Jvs();
+    
+    /**
+     * Integration events configuration (CSV imports, etc).
+     */
+    private Integration integration = new Integration();
 
     public boolean isEnabled() {
         return enabled;
@@ -180,6 +185,14 @@ public class HitorroProperties {
     
     public void setHitorroProperties(java.util.Map<String, Object> hitorroProperties) {
         this.hitorroProperties = hitorroProperties;
+    }
+    
+    public Integration getIntegration() {
+        return integration;
+    }
+    
+    public void setIntegration(Integration integration) {
+        this.integration = integration;
     }
 
     public static class Services {
@@ -636,6 +649,38 @@ public class HitorroProperties {
             public void setBasePath(String basePath) {
                 this.basePath = basePath;
             }
+        }
+    }
+    
+    /**
+     * Integration events configuration (CSV imports, data loading).
+     */
+    public static class Integration {
+        /**
+         * Whether to enable integration events auto-configuration.
+         */
+        private boolean enabled = true;
+        
+        /**
+         * Whether to automatically run integration events on application startup.
+         * If false, events can be triggered manually via IntegrationEventsManager.
+         */
+        private boolean runOnStartup = false;
+        
+        public boolean isEnabled() {
+            return enabled;
+        }
+        
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+        
+        public boolean isRunOnStartup() {
+            return runOnStartup;
+        }
+        
+        public void setRunOnStartup(boolean runOnStartup) {
+            this.runOnStartup = runOnStartup;
         }
     }
 }

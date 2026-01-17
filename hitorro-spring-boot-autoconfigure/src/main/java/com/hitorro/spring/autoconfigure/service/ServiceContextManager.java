@@ -45,11 +45,13 @@ public class ServiceContextManager implements ApplicationContextAware, Initializ
 
     private final ServiceContext serviceContext;
     private final HitorroProperties properties;
+    private final SpringDatabaseConfigProvider databaseConfigProvider;
     private ApplicationContext applicationContext;
 
-    public ServiceContextManager(HitorroProperties properties) {
+    public ServiceContextManager(HitorroProperties properties, SpringDatabaseConfigProvider databaseConfigProvider) {
         this.serviceContext = ServiceContext.getSC();
         this.properties = properties;
+        this.databaseConfigProvider = databaseConfigProvider;
         ServiceContext.setServiceContext(this.serviceContext);
     }
 
@@ -60,29 +62,53 @@ public class ServiceContextManager implements ApplicationContextAware, Initializ
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        logger.info("Initializing Hitorro ServiceContext");
+        logger.info("=== Hitorro Service Lifecycle: Starting ===");
         
-        // Initialize Hitorro properties system before ServiceContext
+        // PHASE 0: Initialize Hitorro properties system before ServiceContext
+        logger.info("Phase 0: Initializing JVSProperties");
         initializeHitorroProperties();
         
-        // Load services from configuration
+        // PHASE 0.5: Install Spring database config provider
+        logger.info("Phase 0.5: Installing Spring database config provider");
+        com.hitorro.basedms.db.DatabaseConfigProvider.setProvider(databaseConfigProvider);
+        logger.info("  ✓ Spring DataSource will be used as single source of truth for database config");
+        
+        // PHASE 1: Load services from configuration (equivalent to sc.addModule)
+        logger.info("Phase 1: Loading services (addModule)");
         loadServicesFromConfiguration();
         
-        // Initialize service context
-        serviceContext.setInitDb(properties.getServices().isDbInit());
+        // PHASE 2: Validate configuration keys (IMPORTANT - missing in original!)
+        logger.info("Phase 2: Validating configuration keys");
+        String validationError = ServiceContext.validateConfigKeys();
+        if (!com.hitorro.util.core.string.StringUtil.nullOrEmptyOrBlankString(validationError)) {
+            logger.error("Configuration validation failed:");
+            logger.error(validationError);
+            throw new IllegalStateException("Unable to validate service configuration: " + validationError);
+        }
+        logger.info("  ✓ All configuration keys validated successfully");
         
-        String error = serviceContext.init();
-        if (error != null) {
-            throw new IllegalStateException("Failed to initialize Hitorro ServiceContext: " + error);
+        // PHASE 3: Initialize service context (runs all startup phases)
+        logger.info("Phase 3: Initializing services (runs startup phases)");
+        serviceContext.setInitDb(properties.getServices().isDbInit());
+        logger.info("  - dbInit flag: {}", properties.getServices().isDbInit());
+        
+        String initError = serviceContext.init();
+        if (initError != null) {
+            logger.error("Service initialization failed: {}", initError);
+            throw new IllegalStateException("Failed to initialize Hitorro ServiceContext: " + initError);
         }
         
-        logger.info("Hitorro ServiceContext initialized successfully");
+        logger.info("=== Hitorro Service Lifecycle: Complete ===");
         logger.info("Initialized {} services", serviceContext.getServices().size());
         
         // Log initialized services
         for (ServiceWrapper sw : serviceContext.getServices()) {
             logger.info("  ✓ {}: {}", sw.getShortName(), sw.getDescription());
         }
+        
+        // Note: runIfRunnable() and deInit() are handled separately
+        // - runIfRunnable() would be called by application code if needed
+        // - deInit() is called in destroy() method during Spring shutdown
     }
     
     /**
@@ -294,6 +320,60 @@ public class ServiceContextManager implements ApplicationContextAware, Initializ
      */
     public List<ServiceWrapper> getAllServices() {
         return serviceContext.getServices();
+    }
+    
+    /**
+     * Run a service if it implements Runnable.
+     * This is equivalent to calling s.runIfRunnable() in BaseCommandLine.
+     * 
+     * @param serviceClass The service class to run
+     * @return true if the service was runnable and executed
+     */
+    public boolean runServiceIfRunnable(Class<?> serviceClass) {
+        ServiceWrapper sw = serviceContext.getInitializedServiceWrapper(serviceClass);
+        if (sw == null) {
+            logger.warn("Service {} is not initialized", serviceClass.getName());
+            return false;
+        }
+        
+        logger.info("Running service if runnable: {}", sw.getShortName());
+        sw.runIfRunnable();
+        return true;
+    }
+    
+    /**
+     * Run a service by short name if it implements Runnable.
+     * 
+     * @param shortName The service short name to run
+     * @return true if the service was found, runnable, and executed
+     */
+    public boolean runServiceIfRunnable(String shortName) {
+        ServiceWrapper sw = serviceContext.getInitializedServiceByShortname(shortName);
+        if (sw == null) {
+            logger.warn("Service '{}' is not initialized", shortName);
+            return false;
+        }
+        
+        logger.info("Running service if runnable: {}", sw.getShortName());
+        sw.runIfRunnable();
+        return true;
+    }
+    
+    /**
+     * Validate configuration keys for all services.
+     * This is equivalent to ServiceContext.validateConfigKeys() in BaseCommandLine.
+     * 
+     * @return Empty string if valid, error message if validation failed
+     */
+    public String validateConfiguration() {
+        return ServiceContext.validateConfigKeys();
+    }
+    
+    /**
+     * Check if the service context has been initialized.
+     */
+    public boolean isInitialized() {
+        return serviceContext.isInitialized();
     }
     
     /**
