@@ -21,22 +21,28 @@
  */
 package com.hitorro.spring.autoconfigure.commands;
 
+import com.hitorro.jsontypesystem.JVS;
 import com.hitorro.util.commandandcontrol.Command;
 import com.hitorro.util.commandandcontrol.CommandRegistry;
 import com.hitorro.util.commandandcontrol.CommandSession;
+import com.hitorro.util.commandandcontrol.json.JSONResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.StringWriter;
-import java.io.PrintWriter;
+import java.io.ByteArrayOutputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * REST controller that exposes Hitorro commands as HTTP endpoints.
- * Commands registered via @CommandDef annotations are available at /api/commands/*
+ * 
+ * This controller properly integrates with the Hitorro CommandRegistry:
+ * - Uses CommandRegistry.getRegistry() to list all registered commands
+ * - Uses CommandRegistry.execute() to run commands through the Hitorro infrastructure
+ * - Uses JSONResponse to capture command output
+ * - All commands registered via @CommandDef annotations are automatically available
  */
 @RestController
 @RequestMapping("${hitorro.commands.rest.base-path:/api/commands}")
@@ -48,85 +54,211 @@ public class CommandRestController {
 
     public CommandRestController(CommandRegistrationManager registrationManager) {
         this.registrationManager = registrationManager;
-        logger.info("Command REST endpoints registered at: ${hitorro.commands.rest.base-path:/api/commands}");
+        logger.info("Command REST endpoints registered - using Hitorro CommandRegistry");
     }
 
     /**
-     * Execute a command and return the result.
+     * List all available commands with full metadata from the Hitorro CommandRegistry.
      * 
-     * POST /api/commands/execute
-     * Body: { "command": "help" }
-     */
-    @PostMapping("/execute")
-    public ResponseEntity<Map<String, Object>> executeCommand(@RequestBody Map<String, String> request) {
-        String commandLine = request.get("command");
-        if (commandLine == null || commandLine.trim().isEmpty()) {
-            return ResponseEntity.badRequest()
-                .body(Map.of("error", "Command is required"));
-        }
-
-        try {
-            // Execute command using CommandSession
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            StringBuilder builder = new StringBuilder();
-            CommandSession session = new CommandSession();
-
-            logger.debug("Executing command: {}", commandLine);
-            
-            CommandSession.executeToLog(commandLine, "");
-            
-            // Capture output
-            String output = sw.toString();
-            if (output.isEmpty() && builder.length() > 0) {
-                output = builder.toString();
-            }
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("command", commandLine);
-            response.put("output", output);
-            response.put("success", true);
-
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            logger.error("Error executing command: {}", commandLine, e);
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("command", commandLine);
-            response.put("error", e.getMessage());
-            response.put("success", false);
-            
-            return ResponseEntity.status(500).body(response);
-        }
-    }
-
-    /**
-     * List all available commands.
+     * GET /api/commands/list?includeInternal=true
      * 
-     * GET /api/commands/list
+     * @param includeInternal if true, includes internal commands; if false (default), only public commands
      */
     @GetMapping("/list")
-    public ResponseEntity<Map<String, Object>> listCommands() {
+    public ResponseEntity<List<CommandDefInfo>> listCommands(
+            @RequestParam(name = "includeInternal", required = false, defaultValue = "false") 
+            boolean includeInternal) {
+        
         CommandRegistry registry = registrationManager.getCommandRegistry();
-        java.util.Collection<com.hitorro.util.commandandcontrol.Command> commands = registry.getCommands();
+        java.util.Collection<Command> commands = registry.getCommands();
 
-        List<Map<String, String>> commandList = commands.stream()
-            .map(cmd -> {
-                Map<String, String> info = new HashMap<>();
-                info.put("name", cmd.toString());
-                // Add more details if Command has getDescription(), etc.
-                return info;
-            })
+        List<CommandDefInfo> commandList = commands.stream()
+            .filter(cmd -> includeInternal || !cmd.isInternal())  // Filter based on parameter
+            .map(this::buildCommandDefInfo)
+            .sorted((a, b) -> a.getName().compareTo(b.getName()))
             .collect(Collectors.toList());
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("total", commands.size());
-        response.put("commands", commandList);
-
-        return ResponseEntity.ok(response);
+        logger.debug("Listing {} commands from CommandRegistry (includeInternal={}, total={})", 
+                    commandList.size(), includeInternal, commands.size());
+        return ResponseEntity.ok(commandList);
     }
+    
+    /**
+     * Get metadata for a specific command from the CommandRegistry.
+     * 
+     * GET /api/commands/{commandName}
+     */
+    @GetMapping("/{commandName}")
+    public ResponseEntity<CommandDefInfo> getCommand(@PathVariable String commandName) {
+        CommandRegistry registry = registrationManager.getCommandRegistry();
+        Command cmd = registry.get(commandName);
+        
+        if (cmd == null) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        CommandDefInfo info = buildCommandDefInfo(cmd);
+        return ResponseEntity.ok(info);
+    }
+    
+    /**
+     * Execute a command using the Hitorro CommandRegistry infrastructure.
+     * 
+     * POST /api/commands/execute
+     * Body: { "commandName": "demo.echo", "parameters": { "message": "hello" } }
+     * 
+     * This properly uses:
+     * - CommandRegistry.execute() to run the command
+     * - JSONResponse to capture structured output
+     * - JVS (JSON Value Store) for parameters
+     */
+    @PostMapping("/execute")
+    public ResponseEntity<CommandExecuteResponse> executeCommand(@RequestBody CommandExecuteRequest request) {
+        long startTime = System.currentTimeMillis();
+        String commandName = request.getCommandName();
+        
+        if (commandName == null || commandName.trim().isEmpty()) {
+            return ResponseEntity.badRequest()
+                .body(new CommandExecuteResponse(false, null, "Command name is required", 0));
+        }
 
+        logger.info("Executing command via CommandRegistry: {} with parameters: {}", 
+                   commandName, request.getParameters());
+
+        try {
+            // Get the command from the registry
+            CommandRegistry registry = registrationManager.getCommandRegistry();
+            Command command = registry.get(commandName);
+            
+            if (command == null) {
+                return ResponseEntity.status(404)
+                    .body(new CommandExecuteResponse(false, null, 
+                        "Command not found: " + commandName, 
+                        System.currentTimeMillis() - startTime));
+            }
+            
+            // Convert parameters to JVS (Hitorro's JSON Value Store)
+            JVS jvs = new JVS();
+            if (request.getParameters() != null) {
+                for (Map.Entry<String, Object> entry : request.getParameters().entrySet()) {
+                    Object value = entry.getValue();
+                    if (value instanceof Number) {
+                        jvs.set(entry.getKey(), ((Number) value).intValue());
+                    } else if (value instanceof Boolean) {
+                        jvs.set(entry.getKey(), (Boolean) value);
+                    } else {
+                        jvs.set(entry.getKey(), String.valueOf(value));
+                    }
+                }
+            }
+            
+            // Create a JSONResponse to capture the command output
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            JSONResponse response = new JSONResponse(commandName, baos);
+            
+            // Create a CommandSession for execution context
+            CommandSession session = new CommandSession();
+            
+            // Execute the command using the Hitorro CommandRegistry infrastructure
+            boolean success = registry.execute("", commandName, jvs, response, session);
+            
+            // End the response to flush output
+            response.end();
+            
+            // Parse the NDJSON output (newline-delimited JSON)
+            String jsonOutput = baos.toString("UTF-8");
+            Object result = parseNDJsonOutput(jsonOutput);
+            
+            long executionTime = System.currentTimeMillis() - startTime;
+            
+            logger.info("Command {} executed via CommandRegistry: success={}, time={}ms, result={}", 
+                       commandName, success, executionTime, result);
+            
+            return ResponseEntity.ok(new CommandExecuteResponse(success, result, null, executionTime));
+            
+        } catch (Exception e) {
+            long executionTime = System.currentTimeMillis() - startTime;
+            logger.error("Error executing command via CommandRegistry: {}", commandName, e);
+            
+            String errorMessage = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+            return ResponseEntity.status(500)
+                .body(new CommandExecuteResponse(false, null, errorMessage, executionTime));
+        }
+    }
+    
+    /**
+     * Parse NDJSON (newline-delimited JSON) output from JSONResponse.
+     * JSONResponse writes each row as a separate JSON object on its own line.
+     */
+    private Object parseNDJsonOutput(String ndjsonOutput) {
+        if (ndjsonOutput == null || ndjsonOutput.trim().isEmpty()) {
+            return null;
+        }
+        
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = 
+                new com.fasterxml.jackson.databind.ObjectMapper();
+            
+            // Split by newlines and parse each JSON object
+            String[] lines = ndjsonOutput.trim().split("\n");
+            List<Object> results = new ArrayList<>();
+            
+            for (String line : lines) {
+                line = line.trim();
+                if (!line.isEmpty()) {
+                    try {
+                        Object obj = mapper.readValue(line, Object.class);
+                        results.add(obj);
+                    } catch (Exception e) {
+                        // If line is not JSON, add as string
+                        results.add(line);
+                    }
+                }
+            }
+            
+            // If only one result, return it directly; otherwise return the list
+            if (results.isEmpty()) {
+                return null;
+            } else if (results.size() == 1) {
+                return results.get(0);
+            } else {
+                return results;
+            }
+            
+        } catch (Exception e) {
+            logger.warn("Error parsing NDJSON output: {}", e.getMessage());
+            // Return as raw string if parsing fails
+            return ndjsonOutput;
+        }
+    }
+    
+    /**
+     * Build CommandDefInfo from a Command object from the CommandRegistry.
+     */
+    private CommandDefInfo buildCommandDefInfo(Command cmd) {
+        CommandDefInfo info = new CommandDefInfo();
+        info.setName(cmd.getCommand());
+        info.setDescription(cmd.getDescription());
+        info.setInternal(cmd.isInternal());
+        info.setReturnType("Object");  // Commands don't expose return type metadata
+        
+        List<CommandParameter> params = new ArrayList<>();
+        List<com.hitorro.util.commandandcontrol.DebugCommandArg> args = cmd.getArguments();
+        if (args != null) {
+            for (com.hitorro.util.commandandcontrol.DebugCommandArg arg : args) {
+                CommandParameter param = new CommandParameter();
+                param.setName(arg.getName());
+                param.setType(arg.getJsonPropertyKey().getPropertyType());
+                param.setRequired(arg.getRequired());
+                param.setDescription(arg.getDescription());
+                params.add(param);
+            }
+        }
+        info.setParameters(params);
+        
+        return info;
+    }
+    
     /**
      * Get help for a specific command.
      * 
@@ -135,23 +267,12 @@ public class CommandRestController {
     @GetMapping("/help/{commandName}")
     public ResponseEntity<Map<String, Object>> getCommandHelp(@PathVariable String commandName) {
         try {
-            // Execute "help {commandName}"
-            String commandLine = "help " + commandName;
+            // Execute "help {commandName}" using CommandRegistry
+            CommandSession.executeToLog("help " + commandName, "");
             
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            StringBuilder builder = new StringBuilder();
-            
-            CommandSession.executeToLog(commandLine, "");
-            
-            String output = sw.toString();
-            if (output.isEmpty() && builder.length() > 0) {
-                output = builder.toString();
-            }
-
             Map<String, Object> response = new HashMap<>();
             response.put("command", commandName);
-            response.put("help", output);
+            response.put("message", "Help information logged - check server logs");
 
             return ResponseEntity.ok(response);
             
@@ -159,5 +280,92 @@ public class CommandRestController {
             return ResponseEntity.status(404)
                 .body(Map.of("error", "Command not found: " + commandName));
         }
+    }
+    
+    // DTO Classes for command metadata and execution
+    
+    public static class CommandDefInfo {
+        private String name;
+        private String description;
+        private List<CommandParameter> parameters;
+        private String returnType;
+        private boolean internal;
+        
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+        
+        public List<CommandParameter> getParameters() { return parameters; }
+        public void setParameters(List<CommandParameter> parameters) { this.parameters = parameters; }
+        
+        public String getReturnType() { return returnType; }
+        public void setReturnType(String returnType) { this.returnType = returnType; }
+        
+        public boolean isInternal() { return internal; }
+        public void setInternal(boolean internal) { this.internal = internal; }
+    }
+    
+    public static class CommandParameter {
+        private String name;
+        private String type;
+        private boolean required;
+        private Object defaultValue;
+        private String description;
+        
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        
+        public String getType() { return type; }
+        public void setType(String type) { this.type = type; }
+        
+        public boolean isRequired() { return required; }
+        public void setRequired(boolean required) { this.required = required; }
+        
+        public Object getDefaultValue() { return defaultValue; }
+        public void setDefaultValue(Object defaultValue) { this.defaultValue = defaultValue; }
+        
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+    }
+    
+    public static class CommandExecuteRequest {
+        private String commandName;
+        private Map<String, Object> parameters;
+        
+        public String getCommandName() { return commandName; }
+        public void setCommandName(String commandName) { this.commandName = commandName; }
+        
+        public Map<String, Object> getParameters() { return parameters; }
+        public void setParameters(Map<String, Object> parameters) { this.parameters = parameters; }
+    }
+    
+    public static class CommandExecuteResponse {
+        private boolean success;
+        private Object result;
+        private String error;
+        private long executionTimeMs;
+        
+        public CommandExecuteResponse() {}
+        
+        public CommandExecuteResponse(boolean success, Object result, String error, long executionTimeMs) {
+            this.success = success;
+            this.result = result;
+            this.error = error;
+            this.executionTimeMs = executionTimeMs;
+        }
+        
+        public boolean isSuccess() { return success; }
+        public void setSuccess(boolean success) { this.success = success; }
+        
+        public Object getResult() { return result; }
+        public void setResult(Object result) { this.result = result; }
+        
+        public String getError() { return error; }
+        public void setError(String error) { this.error = error; }
+        
+        public long getExecutionTimeMs() { return executionTimeMs; }
+        public void setExecutionTimeMs(long executionTimeMs) { this.executionTimeMs = executionTimeMs; }
     }
 }

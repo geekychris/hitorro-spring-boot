@@ -53,69 +53,10 @@ public class CommandEndpointController {
     }
 
     /**
-     * Execute a Hitorro command via POST request.
-     * 
-     * @param request Command execution request containing command and arguments
-     * @return ResponseEntity with command output
+     * NOTE: Both /list and /execute endpoints have been moved to CommandRestController
+     * which provides proper command metadata and execution through the Hitorro CommandRegistry.
+     * This controller is kept for backward compatibility but endpoints are deprecated.
      */
-    @PostMapping(value = "${hitorro.commands.rest.base-path:/api/commands}/execute", 
-                 produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Map<String, Object>> executeCommand(@RequestBody CommandRequest request) {
-        logger.debug("Executing command: {}", request.getCommand());
-        
-        try {
-            // Use CommandSession.executeToLog for simple command execution
-            boolean success = CommandSession.executeToLog(request.getCommand(), "");
-            
-            // Build response
-            Map<String, Object> result = new HashMap<>();
-            result.put("success", success);
-            result.put("command", request.getCommand());
-            result.put("output", "Command executed - check logs for output");
-            
-            HttpStatus status = success ? HttpStatus.OK : HttpStatus.INTERNAL_SERVER_ERROR;
-            return ResponseEntity.status(status).body(result);
-            
-        } catch (Exception e) {
-            logger.error("Error executing command: {}", request.getCommand(), e);
-            
-            Map<String, Object> errorResult = new HashMap<>();
-            errorResult.put("success", false);
-            errorResult.put("command", request.getCommand());
-            errorResult.put("error", e.getMessage());
-            
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResult);
-        }
-    }
-
-    /**
-     * Get list of available commands.
-     * 
-     * @return List of registered commands
-     */
-    @GetMapping(value = "${hitorro.commands.rest.base-path:/api/commands}/list",
-                produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Map<String, Object>> listCommands() {
-        try {
-            // Execute help command to get list
-            CommandSession.executeToLog("help", "");
-            
-            Map<String, Object> result = new HashMap<>();
-            result.put("success", true);
-            result.put("message", "Commands listed in log - use 'help' command for details");
-            
-            return ResponseEntity.ok(result);
-            
-        } catch (Exception e) {
-            logger.error("Error listing commands", e);
-            
-            Map<String, Object> errorResult = new HashMap<>();
-            errorResult.put("success", false);
-            errorResult.put("error", e.getMessage());
-            
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResult);
-        }
-    }
 
     /**
      * Request body for command execution.
