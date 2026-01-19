@@ -25,6 +25,7 @@ import com.hitorro.jsontypesystem.JVS;
 import com.hitorro.util.commandandcontrol.Command;
 import com.hitorro.util.commandandcontrol.CommandRegistry;
 import com.hitorro.util.commandandcontrol.CommandSession;
+import com.hitorro.util.commandandcontrol.RestOperations;
 import com.hitorro.util.commandandcontrol.json.JSONResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -242,6 +243,16 @@ public class CommandRestController {
         info.setInternal(cmd.isInternal());
         info.setReturnType("Object");  // Commands don't expose return type metadata
         
+        // Add REST operations metadata
+        RestOperations[] restOps = cmd.getRestOperations();
+        if (restOps != null && restOps.length > 0) {
+            List<String> httpMethods = new ArrayList<>();
+            for (RestOperations op : restOps) {
+                httpMethods.add(toHttpMethod(op));
+            }
+            info.setRestOperations(httpMethods);
+        }
+        
         List<CommandParameter> params = new ArrayList<>();
         List<com.hitorro.util.commandandcontrol.DebugCommandArg> args = cmd.getArguments();
         if (args != null) {
@@ -257,6 +268,21 @@ public class CommandRestController {
         info.setParameters(params);
         
         return info;
+    }
+    
+    /**
+     * Convert Hitorro RestOperations to HTTP method string.
+     */
+    private String toHttpMethod(RestOperations operation) {
+        switch (operation) {
+            case Get: return "GET";
+            case Post: return "POST";
+            case Put: return "PUT";
+            case Delete: return "DELETE";
+            case Head: return "HEAD";
+            case LastModified: return "GET";  // LastModified is a GET variant
+            default: return operation.toString().toUpperCase();
+        }
     }
     
     /**
@@ -290,6 +316,7 @@ public class CommandRestController {
         private List<CommandParameter> parameters;
         private String returnType;
         private boolean internal;
+        private List<String> restOperations;  // HTTP methods this command supports (GET, POST, etc.)
         
         public String getName() { return name; }
         public void setName(String name) { this.name = name; }
@@ -305,6 +332,9 @@ public class CommandRestController {
         
         public boolean isInternal() { return internal; }
         public void setInternal(boolean internal) { this.internal = internal; }
+        
+        public List<String> getRestOperations() { return restOperations; }
+        public void setRestOperations(List<String> restOperations) { this.restOperations = restOperations; }
     }
     
     public static class CommandParameter {

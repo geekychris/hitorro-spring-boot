@@ -84,4 +84,13 @@ public class HitorroServiceAutoConfiguration {
     public HitorroServiceFactory hitorroServiceFactory(ServiceContextManager manager) {
         return new HitorroServiceFactory(manager);
     }
+
+    /**
+     * REST controller for exploring Hitorro services.
+     */
+    @Bean
+    public ServiceExplorerController serviceExplorerController(ServiceContextManager manager) {
+        logger.info("Creating Hitorro Service Explorer REST controller");
+        return new ServiceExplorerController(manager);
+    }
 }

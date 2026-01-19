@@ -21,48 +21,34 @@
  */
 package com.hitorro.spring.autoconfigure.rest;
 
-import com.hitorro.spring.autoconfigure.HitorroProperties;
-import com.hitorro.spring.autoconfigure.service.HitorroServiceAutoConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfigureAfter;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
- * Auto-configuration for Hitorro REST endpoint integration.
- * Discovers Commands that support REST operations and exposes them via Spring MVC.
+ * Auto-configuration for Hitorro REST endpoints.
+ * 
+ * This configuration automatically enables REST API endpoints for Hitorro commands
+ * that declare restOperations in their @CommandDef annotation.
+ * 
+ * Commands become accessible at: /api/rest/{commandName}
+ * Discovery endpoint available at: /api/rest
  */
-@AutoConfiguration
-@ConditionalOnClass(name = "com.hitorro.util.commandandcontrol.Command")
+@Configuration
 @ConditionalOnProperty(name = "hitorro.rest.enabled", havingValue = "true", matchIfMissing = true)
-@EnableConfigurationProperties(HitorroProperties.class)
-@AutoConfigureAfter(HitorroServiceAutoConfiguration.class)
+@EnableConfigurationProperties(HitorroRestProperties.class)
 public class HitorroRestAutoConfiguration {
+    
     private static final Logger logger = LoggerFactory.getLogger(HitorroRestAutoConfiguration.class);
     
-    public HitorroRestAutoConfiguration() {
-        logger.info("Initializing Hitorro REST auto-configuration");
-    }
-    
-    /**
-     * Create the REST mapping manager that discovers REST-enabled commands.
-     */
     @Bean
-    public HitorroRestMappingManager hitorroRestMappingManager() {
-        logger.info("Creating HitorroRestMappingManager");
-        return new HitorroRestMappingManager();
-    }
-    
-    /**
-     * Create the REST controller that handles HTTP requests to REST commands.
-     */
-    @Bean
-    public HitorroRestController hitorroRestController(HitorroRestMappingManager mappingManager) {
-        logger.info("Creating HitorroRestController");
-        return new HitorroRestController(mappingManager);
+    public HitorroRestController hitorroRestController() {
+        logger.info("✓ Hitorro REST endpoints enabled at ${hitorro.rest.base-path:/api/rest}");
+        logger.info("  REST-enabled commands will be automatically exposed as HTTP endpoints");
+        logger.info("  Discovery endpoint: GET ${hitorro.rest.base-path:/api/rest}");
+        return new HitorroRestController();
     }
 }
