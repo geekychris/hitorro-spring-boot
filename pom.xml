@@ -69,6 +69,11 @@
                 <artifactId>hitorro-basedms</artifactId>
                 <version>${hitorro.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.hitorro</groupId>
+                <artifactId>hitorro-test</artifactId>
+                <version>${hitorro.version}</version>
+            </dependency>
 
             <!-- Internal modules -->
             <dependency>

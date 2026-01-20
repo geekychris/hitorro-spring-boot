@@ -5,4 +5,5 @@ com.hitorro.spring.autoconfigure.HitorroEnvironmentPostProcessor
 # Auto Configuration
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
 com.hitorro.spring.autoconfigure.filesystem.FileSystemAutoConfiguration,\
-com.hitorro.spring.autoconfigure.rest.HitorroRestAutoConfiguration
+com.hitorro.spring.autoconfigure.rest.HitorroRestAutoConfiguration,\
+com.hitorro.spring.autoconfigure.transformer.TransformerAutoConfiguration

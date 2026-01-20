@@ -1,0 +1,82 @@
+# Test Configuration for TransformerRestControllerTest
+# Models after hitorro-example-springboot test configuration
+
+spring:
+  # H2 in-memory database for testing
+  datasource:
+    url: jdbc:h2:mem:transformer_testdb;MODE=MySQL;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  
+  # JPA Configuration
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        globally_quoted_identifiers: true
+        hbm2ddl.halt_on_error: false
+
+hitorro:
+  enabled: true
+  
+  # Core Hitorro paths
+  ht-bin: ${HT_BIN:/Users/chris/hitorro}
+  ht-home: ${HT_HOME:/Users/chris/hthome}
+  
+  # Service framework configuration
+  services:
+    enabled: true
+    db-init: true
+    load:
+      - com.hitorro.basedms.db.HibernateService
+      - com.hitorro.base.objects.BaseDMSService
+      - com.hitorro.util.testframework.TestServerService
+  
+  # Hitorro properties
+  hitorro-properties:
+    network.disablelocalhostcheck: true
+    rpc.enableclustermember: false
+    dbinit: true
+  
+  # DMS Configuration
+  dms:
+    enabled: true
+    session-scope: prototype
+    transaction-mode: spring-managed
+    db-init:
+      enabled: false
+  
+  # Transformer Configuration - THIS IS WHAT WE'RE TESTING
+  transformer:
+    enabled: true
+    rest:
+      enabled: true
+  
+  # Disable other features not needed for transformer tests
+  commands:
+    rest:
+      enabled: false
+  cli:
+    native-enabled: false
+    spring-shell-enabled: false
+    actuator-enabled: false
+  jvs:
+    enabled: true
+    nlp-enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.hitorro: INFO
+    com.hitorro.spring.autoconfigure.transformer: DEBUG
+    org.hibernate: WARN
+    org.hibernate.tool.schema: ERROR
+    org.springframework.orm: WARN
