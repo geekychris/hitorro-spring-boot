@@ -26,7 +26,6 @@ import com.hitorro.base.objects.PersistedSerializedObject;
 import com.hitorro.base.objects.VersionableObject;
 import com.hitorro.basedms.contentconstraints.MimeTypeContentConstraint;
 import com.hitorro.basedms.session.DMSSession;
-import com.hitorro.basedms.session.DMSSessionFactory;
 import com.hitorro.basedms.transformer.*;
 import com.hitorro.util.core.ListUtil;
 import com.hitorro.util.core.opers.HTPredicate;
@@ -45,6 +44,12 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/transformer")
 public class RenditionTransformationController {
+    
+    private final com.hitorro.spring.autoconfigure.dms.DMSSessionFactory sessionFactory;
+    
+    public RenditionTransformationController(com.hitorro.spring.autoconfigure.dms.DMSSessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
+    }
     
     /**
      * Get available target MIME types for a given source MIME type
@@ -109,12 +114,29 @@ public class RenditionTransformationController {
      * GET /api/transformer/content/{contentGuid}/available-transformations
      */
     @GetMapping("/content/{contentGuid}/available-transformations")
-    public ResponseEntity<?> getContentAvailableTransformations(@PathVariable String contentGuid) {
+    public ResponseEntity<?> getContentAvailableTransformations(@PathVariable("contentGuid") String contentGuid) {
         DMSSession session = null;
         try {
-            session = (DMSSession) DMSSessionFactory.getFactory().getSession();
+            System.out.println("DEBUG: Looking up content with GUID: " + contentGuid);
+            session = (DMSSession) sessionFactory.getSession();
+            System.out.println("DEBUG: Session obtained: " + session);
+            
+            // Debug type system
+            try {
+                com.hitorro.util.typesystem.TypeManager tm = com.hitorro.util.typesystem.TypeManager.getTypeManager();
+                System.out.println("DEBUG: TypeManager: " + tm);
+                com.hitorro.util.typesystem.Type contentType = tm.getTypeForClass(Content.class);
+                System.out.println("DEBUG: Content type: " + contentType);
+                if (contentType != null) {
+                    System.out.println("DEBUG: GuidAccessor for Content: " + contentType.getGuidAccessor());
+                }
+            } catch (Exception e) {
+                System.err.println("DEBUG: Error checking type system: " + e.getMessage());
+                e.printStackTrace();
+            }
             
             Content content = (Content) session.getObjectFromGuid(contentGuid);
+            System.out.println("DEBUG: Content lookup result: " + (content != null ? "found" : "null"));
             if (content == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("error", "Content not found", "guid", contentGuid));
@@ -122,6 +144,7 @@ public class RenditionTransformationController {
             
             String sourceMimeType = content.getContentType() != null ? 
                     content.getContentType().getMimeType() : null;
+            System.out.println("DEBUG: Source MIME type: " + sourceMimeType);
             if (sourceMimeType == null || sourceMimeType.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Map.of("error", "Content has no MIME type"));
@@ -129,6 +152,12 @@ public class RenditionTransformationController {
             
             Map<String, RenditionTransformationHelper.TransformationInfo> transformations = 
                     RenditionTransformationHelper.getAvailableTransformations(sourceMimeType);
+            System.out.println("DEBUG: Found " + transformations.size() + " transformations");
+            for (Map.Entry<String, RenditionTransformationHelper.TransformationInfo> entry : transformations.entrySet()) {
+                RenditionTransformationHelper.TransformationInfo info = entry.getValue();
+                System.out.println("DEBUG:   " + info.getSourceMimeType() + " → " + info.getTargetMimeType() + 
+                                 " via " + info.getMethodName() + " (available: " + info.isAvailable() + ")");
+            }
             
             List<Map<String, Object>> transformationList = new ArrayList<>();
             for (Map.Entry<String, RenditionTransformationHelper.TransformationInfo> entry : transformations.entrySet()) {
@@ -150,11 +179,18 @@ public class RenditionTransformationController {
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            System.err.println("ERROR in getContentAvailableTransformations: " + e.getMessage());
+            e.printStackTrace();
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to get content transformations");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("contentGuid", contentGuid);
+            errorResponse.put("exceptionType", e.getClass().getName());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to get content transformations", "message", e.getMessage()));
+                    .body(errorResponse);
         } finally {
             if (session != null) {
-                DMSSessionFactory.closeSession(session);
+                session.close();
             }
         }
     }
@@ -176,13 +212,19 @@ public class RenditionTransformationController {
     public ResponseEntity<?> queueTransformation(@RequestBody TransformationRequest request) {
         DMSSession session = null;
         try {
-            session = (DMSSession) DMSSessionFactory.getFactory().getSession();
+            session = (DMSSession) sessionFactory.getSession();
             
             // Validate document
-            VersionableObject document = (VersionableObject) session.getObjectFromGuid(request.getDocumentGuid());
+            String documentGuid = request.getDocumentGuid();
+            if (documentGuid == null || documentGuid.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "Document GUID is required"));
+            }
+            
+            VersionableObject document = (VersionableObject) session.getObjectFromGuid(documentGuid);
             if (document == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "Document not found", "guid", request.getDocumentGuid()));
+                        .body(Map.of("error", "Document not found", "guid", documentGuid));
             }
             
             // Get content by GUID or find by constraint
@@ -267,11 +309,13 @@ public class RenditionTransformationController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
+            e.printStackTrace();
+            String message = e.getMessage() != null ? e.getMessage() : e.getClass().getName();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to queue transformation", "message", e.getMessage()));
+                    .body(Map.of("error", "Failed to queue transformation", "message", message));
         } finally {
             if (session != null) {
-                DMSSessionFactory.closeSession(session);
+                session.close();
             }
         }
     }

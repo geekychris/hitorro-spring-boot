@@ -21,9 +21,13 @@
  */
 package com.hitorro.spring.autoconfigure.transformer;
 
+import com.hitorro.spring.autoconfigure.dms.DMSAutoConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -32,6 +36,7 @@ import org.springframework.context.annotation.Bean;
  * Auto-configuration for Hitorro Transformer REST API
  */
 @AutoConfiguration
+@AutoConfigureAfter(DMSAutoConfiguration.class)
 @ConditionalOnClass(name = "com.hitorro.basedms.transformer.TransformerService")
 @ConditionalOnProperty(prefix = "hitorro.transformer", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class TransformerAutoConfiguration {
@@ -46,12 +51,13 @@ public class TransformerAutoConfiguration {
     
     @Bean
     @ConditionalOnProperty(prefix = "hitorro.transformer.rest", name = "enabled", havingValue = "true", matchIfMissing = true)
-    public RenditionTransformationController renditionTransformationController() {
+    public RenditionTransformationController renditionTransformationController(
+            com.hitorro.spring.autoconfigure.dms.DMSSessionFactory sessionFactory) {
 
         logger.info("╔══════════════════════════════════════════════════════╗");
         logger.info("║  Registering RenditionTransformationController      ║");
         logger.info("╚══════════════════════════════════════════════════════╝");
-        return new RenditionTransformationController();
+        return new RenditionTransformationController(sessionFactory);
     }
     
     @Bean

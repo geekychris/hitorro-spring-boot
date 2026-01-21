@@ -43,6 +43,20 @@ public class DMSSessionFactory {
     }
     
     /**
+     * Gets a DMSSession using Hitorro's native factory (alias for createSession).
+     * 
+     * @return A new DMSSession instance
+     */
+    public DMSSession getSession() {
+        System.out.println("DEBUG: DMSSessionFactory.getSession() called");
+        System.out.println("DEBUG: Native factory: " + com.hitorro.basedms.session.DMSSessionFactory.getFactory());
+        DMSSession session = createSession();
+        System.out.println("DEBUG: Session created: " + session);
+        System.out.println("DEBUG: Session class: " + (session != null ? session.getClass().getName() : "null"));
+        return session;
+    }
+    
+    /**
      * Gets the native Hitorro DMSSessionFactory (returns BaseSessionFactory).
      * 
      * @return The Hitorro DMSSessionFactory instance as BaseSessionFactory

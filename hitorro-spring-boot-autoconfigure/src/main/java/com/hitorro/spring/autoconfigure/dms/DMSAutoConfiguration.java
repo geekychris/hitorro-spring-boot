@@ -95,6 +95,9 @@ public class DMSAutoConfiguration {
             if (hibernateServiceLoaded) {
                 logger.info("HibernateService already loaded via services - skipping DMS auto-configuration");
                 logger.info("Type system and Hibernate are already initialized by HibernateService");
+                logger.info("  Creating wrapper around already-initialized native factory");
+                // Return a wrapper that delegates to the already-initialized native factory
+                return new DMSSessionFactory();
             } else {
                 // HibernateService not loaded, we need to initialize DMS ourselves
                 logger.info("HibernateService not loaded - performing DMS initialization");
