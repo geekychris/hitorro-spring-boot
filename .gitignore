@@ -43,3 +43,5 @@ logs/
 spring.log
 application-local.yml
 application-local.properties
+/hitorro-spring-boot-autoconfigure/uiresource/<<UndefinedServerId>>/platversion.txt
+/hitorro-spring-boot-autoconfigure/softwareversion/successversion
