@@ -247,18 +247,17 @@ public class RenditionTransformationController {
             String targetMimeType = request.getTargetMimeType();
             
             // Check if transformation is available
-            if (!RenditionTransformationHelper.isTransformationAvailable(sourceMimeType, targetMimeType)) {
+            // Note: Skip availability check for template-based transformations
+            // because the source content is parameters, not the thing being transformed
+            boolean isTemplateTransformation = request.getTemplateGuid() != null && !request.getTemplateGuid().isEmpty();
+            
+            if (!isTemplateTransformation && 
+                !RenditionTransformationHelper.isTransformationAvailable(sourceMimeType, targetMimeType)) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(Map.of("error", "Transformation not available",
                                 "sourceMimeType", sourceMimeType,
                                 "targetMimeType", targetMimeType));
             }
-            
-            // Create constraint for the edge lookup
-            HTPredicate<ConvertionEdge> constraint = new LogicalAndOperator<>(
-                    new FromConstraint(sourceMimeType),
-                    new ToConstraint(targetMimeType)
-            );
             
             // Create job parameters
             String targetFileName = request.getTargetFileName();
@@ -272,21 +271,73 @@ public class RenditionTransformationController {
             
             MimeTypeContentConstraint contentConstraint = new MimeTypeContentConstraint(sourceMimeType);
             
-            TransformJobParameters params = TransformerUtil.createJobParameters(
-                    null, // notification guid
-                    null, // notification state
-                    contentConstraint,
-                    request.getDocumentGuid(),
-                    constraint,
-                    tagDomain,
-                    tagValue,
-                    targetFileName,
-                    addAsChild
-            );
+            TransformJobParameters params;
             
-            if (params == null) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(Map.of("error", "Failed to create transformation job parameters"));
+            // Handle template-based transformations differently
+            if (isTemplateTransformation) {
+                // For template transformations, manually create job parameters
+                // because there's no ConvertionEdge for this type of transformation
+                params = new TransformJobParameters();
+                params.provisionId();
+                params.setContentConstraint(contentConstraint);
+                params.setJobGuid(request.getDocumentGuid());
+                
+                // Get template content to build parameters with template path
+                Content templateContent = (Content) session.getObjectFromGuid(request.getTemplateGuid());
+                if (templateContent == null) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(Map.of("error", "Template content not found", "guid", request.getTemplateGuid()));
+                }
+                
+                // Get template file path
+                com.hitorro.util.basefile.fs.BaseFile templateFile = templateContent.getContentFile();
+                String templatePath = ((com.hitorro.util.basefile.fs.file.FileFile) templateFile).getJavaFile().getAbsolutePath();
+                
+                // Build parameters JSON with template path and flatten=false to keep fields visible
+                String templateParams = String.format("{\"_template_path\":\"%s\",\"flatten\":false}", 
+                        templatePath.replace("\\", "\\\\"));
+                params.setTransformerMethodArgs(templateParams);
+                
+                // Set transformer and method for PDF template filling
+                params.setTranformer("PDFTemplateTransformer");
+                params.setTransformerMethod("pdf_template");
+                
+                // Create content setter for output
+                com.hitorro.base.objects.ContentSetter setter = new com.hitorro.base.objects.ContentSetter();
+                setter.setSysGuid(request.getDocumentGuid());
+                setter.setMimeType(targetMimeType);
+                setter.setFileName(targetFileName + ".pdf");
+                setter.setTagDomain(tagDomain);
+                setter.setTagValue(tagValue);
+                
+                params.setContentSetter(setter);
+                params.setAddContentAsChildOfContent(addAsChild);
+                
+            } else {
+                // For standard transformations, use edge-based lookup
+                HTPredicate<ConvertionEdge> constraint = new LogicalAndOperator<>(
+                        new FromConstraint(sourceMimeType),
+                        new ToConstraint(targetMimeType)
+                );
+                
+                params = TransformerUtil.createJobParameters(
+                        null, // notification guid
+                        null, // notification state
+                        contentConstraint,
+                        request.getDocumentGuid(),
+                        constraint,
+                        tagDomain,
+                        tagValue,
+                        targetFileName,
+                        addAsChild,
+                        null, // no template for standard transformations
+                        request.getParameters()
+                );
+                
+                if (params == null) {
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body(Map.of("error", "Failed to create transformation job parameters"));
+                }
             }
             
             // Queue the job
@@ -304,7 +355,31 @@ public class RenditionTransformationController {
             response.put("documentGuid", request.getDocumentGuid());
             response.put("sourceMimeType", sourceMimeType);
             response.put("targetMimeType", targetMimeType);
-            response.put("status", "queued");
+            
+            // Check if immediate execution is requested (useful for testing/synchronous workflows)
+            if (request.isExecuteImmediately()) {
+                try {
+                    // Execute the job synchronously
+                    TransformJob job = new TransformJob();
+                    job.setSession(session);
+                    com.hitorro.util.job.JobExecutionResult execResult = job.doAction(params);
+                    
+                    if (execResult != null) {
+                        session.commit();
+                        response.put("status", "completed");
+                        response.put("executed", true);
+                    } else {
+                        response.put("status", "failed");
+                        response.put("error", "Job execution returned null");
+                    }
+                } catch (Exception e) {
+                    response.put("status", "failed");
+                    response.put("error", "Job execution failed: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            } else {
+                response.put("status", "queued");
+            }
             
             return ResponseEntity.ok(response);
             
@@ -332,6 +407,9 @@ public class RenditionTransformationController {
         private String tagValue;
         private String targetFileName;
         private boolean addAsChild = true;
+        private String templateGuid;
+        private String parameters;
+        private boolean executeImmediately = false;
         
         public String getDocumentGuid() { return documentGuid; }
         public void setDocumentGuid(String documentGuid) { this.documentGuid = documentGuid; }
@@ -356,5 +434,14 @@ public class RenditionTransformationController {
         
         public boolean isAddAsChild() { return addAsChild; }
         public void setAddAsChild(boolean addAsChild) { this.addAsChild = addAsChild; }
+        
+        public String getTemplateGuid() { return templateGuid; }
+        public void setTemplateGuid(String templateGuid) { this.templateGuid = templateGuid; }
+
+        public String getParameters() { return parameters; }
+        public void setParameters(String parameters) { this.parameters = parameters; }
+        
+        public boolean isExecuteImmediately() { return executeImmediately; }
+        public void setExecuteImmediately(boolean executeImmediately) { this.executeImmediately = executeImmediately; }
     }
 }
