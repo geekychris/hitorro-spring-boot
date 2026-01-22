@@ -98,6 +98,11 @@ public class HitorroProperties {
      * Integration events configuration (CSV imports, etc).
      */
     private Integration integration = new Integration();
+    
+    /**
+     * Test framework configuration.
+     */
+    private Test test = new Test();
 
     public boolean isEnabled() {
         return enabled;
@@ -193,6 +198,14 @@ public class HitorroProperties {
     
     public void setIntegration(Integration integration) {
         this.integration = integration;
+    }
+    
+    public Test getTest() {
+        return test;
+    }
+    
+    public void setTest(Test test) {
+        this.test = test;
     }
 
     public static class Services {
@@ -664,6 +677,40 @@ public class HitorroProperties {
         /**
          * Whether to automatically run integration events on application startup.
          * If false, events can be triggered manually via IntegrationEventsManager.
+         */
+        private boolean runOnStartup = false;
+        
+        public boolean isEnabled() {
+            return enabled;
+        }
+        
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+        
+        public boolean isRunOnStartup() {
+            return runOnStartup;
+        }
+        
+        public void setRunOnStartup(boolean runOnStartup) {
+            this.runOnStartup = runOnStartup;
+        }
+    }
+    
+    /**
+     * Test framework configuration.
+     */
+    public static class Test {
+        /**
+         * Whether to enable the test framework service.
+         */
+        private boolean enabled = true;
+        
+        /**
+         * Whether to run tests on server startup.
+         * If true, tests will be triggered when the ServerUp event fires.
+         * If false, the TestServerService will not register an event listener.
+         * Default is false to prevent automatic test execution on startup.
          */
         private boolean runOnStartup = false;
         

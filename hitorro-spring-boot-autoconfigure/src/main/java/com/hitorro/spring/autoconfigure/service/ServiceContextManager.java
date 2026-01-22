@@ -243,6 +243,23 @@ public class ServiceContextManager implements ApplicationContextAware, Initializ
                     props.merge(customProps);
                 }
                 
+                // Convert Spring Boot test properties to JVS format
+                if (properties.getTest() != null) {
+                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                    com.fasterxml.jackson.databind.node.ObjectNode testNode = mapper.createObjectNode();
+                    
+                    // Convert hitorro.test.run-on-startup to test.runonstartup (JVS property format)
+                    testNode.put("runonstartup", properties.getTest().isRunOnStartup());
+                    
+                    com.fasterxml.jackson.databind.node.ObjectNode rootNode = mapper.createObjectNode();
+                    rootNode.set("test", testNode);
+                    
+                    com.hitorro.jsontypesystem.JVS testProps = new com.hitorro.jsontypesystem.JVS(rootNode);
+                    props.merge(testProps);
+                    
+                    logger.info("  - Test framework: runOnStartup={}", properties.getTest().isRunOnStartup());
+                }
+                
                 // Resolve variables in properties (e.g., ${HT_HOME})
                 props.resolveVariables(props);
                 
