@@ -15,6 +15,7 @@
     <url>https://github.com/geekychris/hitorro-spring-boot</url>
 
     <properties>
+        <hitorro.deploy.repo.path>${user.home}/code/hitorro-maven</hitorro.deploy.repo.path>
         <!-- Build configuration -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>21</maven.compiler.source>
