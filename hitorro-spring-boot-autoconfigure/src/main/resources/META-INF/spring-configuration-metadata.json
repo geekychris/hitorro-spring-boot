@@ -28,6 +28,11 @@
       "type": "com.hitorro.spring.autoconfigure.HitorroProperties$Cli",
       "sourceType": "com.hitorro.spring.autoconfigure.HitorroProperties",
       "description": "Hitorro CLI configuration."
+    },
+    {
+      "name": "hitorro.structured-logging",
+      "type": "com.hitorro.spring.autoconfigure.logging.StructuredLoggerProperties",
+      "description": "Configuration for structured logging with Kafka integration."
     }
   ],
   "properties": [
@@ -112,6 +117,54 @@
       "name": "hitorro.cli.actuator-enabled",
       "type": "java.lang.Boolean",
       "description": "Whether to enable Actuator endpoint for commands.",
+      "defaultValue": true
+    },
+    {
+      "name": "hitorro.structured-logging.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether structured logging is enabled.",
+      "defaultValue": false
+    },
+    {
+      "name": "hitorro.structured-logging.kafka-bootstrap-servers",
+      "type": "java.lang.String",
+      "description": "Kafka bootstrap servers for log publishing.",
+      "defaultValue": "localhost:9092"
+    },
+    {
+      "name": "hitorro.structured-logging.config-path",
+      "type": "java.lang.String",
+      "description": "Path to log configuration directory or classpath resource.",
+      "defaultValue": "classpath:log-configs"
+    },
+    {
+      "name": "hitorro.structured-logging.enable-console-fallback",
+      "type": "java.lang.Boolean",
+      "description": "Enable console fallback logging when Kafka is unavailable.",
+      "defaultValue": true
+    },
+    {
+      "name": "hitorro.structured-logging.linger-ms",
+      "type": "java.lang.Long",
+      "description": "Kafka producer linger time in milliseconds.",
+      "defaultValue": 10
+    },
+    {
+      "name": "hitorro.structured-logging.batch-size",
+      "type": "java.lang.Integer",
+      "description": "Kafka producer batch size in bytes.",
+      "defaultValue": 16384
+    },
+    {
+      "name": "hitorro.structured-logging.compression-type",
+      "type": "java.lang.String",
+      "description": "Compression type for Kafka messages (none, gzip, snappy, lz4, zstd).",
+      "defaultValue": "snappy"
+    },
+    {
+      "name": "hitorro.structured-logging.async-publishing",
+      "type": "java.lang.Boolean",
+      "description": "Enable async publishing for non-blocking operation.",
       "defaultValue": true
     }
   ]

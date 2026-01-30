@@ -10,3 +10,4 @@ com.hitorro.spring.autoconfigure.dbinit.DBInitAutoConfiguration
 com.hitorro.spring.autoconfigure.jvs.JsonTypeSystemAutoConfiguration
 com.hitorro.spring.autoconfigure.transformer.TransformerAutoConfiguration
 com.hitorro.spring.boot.autoconfigure.ai.AIServiceAutoConfiguration
+com.hitorro.spring.autoconfigure.logging.StructuredLoggerAutoConfiguration

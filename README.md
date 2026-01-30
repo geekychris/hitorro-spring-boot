@@ -10,6 +10,7 @@ Spring Boot integration for the Hitorro framework, enabling seamless use of Hito
 - **Multiple CLI Options**: Telnet/SSH, Spring Shell, and Actuator endpoints
 - **DMS Integration**: Preserve Hitorro's DMSSession and unified ID system
 - **Transaction Management**: Bridge Hitorro and Spring transactions
+- **Structured Logging**: Config-driven structured logging with Kafka integration (see [STRUCTURED_LOGGING.md](STRUCTURED_LOGGING.md))
 
 ## Quick Start
 
