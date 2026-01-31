@@ -129,6 +129,14 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
+        <!-- Structured Logging Library -->
+        <dependency>
+            <groupId>com.logging</groupId>
+            <artifactId>structured-logging-java</artifactId>
+            <version>1.0.0</version>
+            <optional>true</optional>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

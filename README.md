@@ -256,6 +256,24 @@ hitorro:
     spring-shell-enabled: true  # Keep Spring Shell
 ```
 
+## Adding Structured Loggers
+
+For detailed instructions on adding new structured loggers to this project:
+
+- 📘 [STRUCTURED_LOGGING_INTEGRATION.md](STRUCTURED_LOGGING_INTEGRATION.md) - Complete integration guide
+- 🛠️ [scripts/README.md](scripts/README.md) - Automation scripts
+- 📖 [STRUCTURED_LOGGING.md](STRUCTURED_LOGGING.md) - Comprehensive documentation
+
+### Quick Start
+
+```bash
+# Generate and configure a new logger
+./scripts/add-logger.sh your_config_name
+
+# Copy and configure generated logger
+./scripts/copy-logger.sh YourLoggerName
+```
+
 ## Migration Guide
 
 ### From Standalone Hitorro to Spring Boot
