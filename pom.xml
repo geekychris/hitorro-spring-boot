@@ -25,7 +25,7 @@
         <spring-boot.version>3.2.2</spring-boot.version>
         
         <!-- Hitorro version -->
-        <hitorro.version>3.0.0</hitorro.version>
+        <hitorro.version>3.0.1</hitorro.version>
         
         <!-- Maven plugin versions -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>

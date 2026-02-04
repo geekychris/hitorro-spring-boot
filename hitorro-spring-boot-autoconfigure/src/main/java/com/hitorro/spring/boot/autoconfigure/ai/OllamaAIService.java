@@ -157,6 +157,55 @@ public class OllamaAIService implements AIService {
     }
     
     @Override
+    public String translate(String text, String sourceLanguage, String targetLanguage) {
+        // Map ISO codes to full language names for better LLM understanding
+        String sourceLangName = getLanguageName(sourceLanguage);
+        String targetLangName = getLanguageName(targetLanguage);
+        
+        String prompt = String.format(
+            "Translate the following text from %s to %s. " +
+            "Return ONLY the translated text, with no additional explanation or commentary.\n\n" +
+            "Text to translate:\n%s",
+            sourceLangName, targetLangName, text
+        );
+        
+        return chatClient.prompt()
+            .user(prompt)
+            .call()
+            .content();
+    }
+    
+    /**
+     * Convert ISO 639-1 language code to full language name
+     */
+    private String getLanguageName(String isoCode) {
+        return switch (isoCode.toLowerCase()) {
+            case "en" -> "English";
+            case "de" -> "German";
+            case "es" -> "Spanish";
+            case "fr" -> "French";
+            case "it" -> "Italian";
+            case "pt" -> "Portuguese";
+            case "ja" -> "Japanese";
+            case "zh" -> "Chinese (Simplified)";
+            case "ko" -> "Korean";
+            case "ar" -> "Arabic";
+            case "ru" -> "Russian";
+            case "nl" -> "Dutch";
+            case "pl" -> "Polish";
+            case "sv" -> "Swedish";
+            case "da" -> "Danish";
+            case "no" -> "Norwegian";
+            case "fi" -> "Finnish";
+            case "tr" -> "Turkish";
+            case "hi" -> "Hindi";
+            case "th" -> "Thai";
+            case "vi" -> "Vietnamese";
+            default -> isoCode; // Use code as-is if unknown
+        };
+    }
+    
+    @Override
     public boolean isAvailable() {
         try {
             // Try a simple ping to verify the model is available
