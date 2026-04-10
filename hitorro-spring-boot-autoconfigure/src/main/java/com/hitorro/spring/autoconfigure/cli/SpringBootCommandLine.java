@@ -21,7 +21,7 @@
  */
 package com.hitorro.spring.autoconfigure.cli;
 
-import com.hitorro.jsontypesystem.JVS;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.hitorro.util.cmdline.BaseCommandLine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +68,7 @@ public class SpringBootCommandLine extends BaseCommandLine<SpringBootCommandLine
     }
     
     @Override
-    public JVS reloadJVSProps(boolean runDiff) {
+    public JsonNode reloadJVSProps(boolean runDiff) {
         // Properties already loaded by JsonTypeSystemManager
         logger.debug("JVS properties already loaded by Spring Boot autoconfiguration");
         return commandLineArguments;

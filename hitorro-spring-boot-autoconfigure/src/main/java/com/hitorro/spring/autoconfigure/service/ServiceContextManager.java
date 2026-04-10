@@ -67,7 +67,7 @@ public class ServiceContextManager implements ApplicationContextAware, Initializ
         // PHASE 0: Initialize Hitorro properties system before ServiceContext
         logger.info("Phase 0: Initializing JVSProperties");
         initializeHitorroProperties();
-        
+
         // PHASE 0.5: Install Spring database config provider
         logger.info("Phase 0.5: Installing Spring database config provider");
         com.hitorro.basedms.db.DatabaseConfigProvider.setProvider(databaseConfigProvider);

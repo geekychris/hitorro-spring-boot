@@ -289,7 +289,7 @@ public class HitorroRestController {
             // Execute command through Hitorro's CommandRegistry
             // This is the key: we're using Hitorro's infrastructure, not reimplementing
             CommandSession session = new CommandSession(false);
-            boolean success = registry.execute("", commandName, jvs, hitorroResponse, session);
+            boolean success = registry.execute("", commandName, (com.fasterxml.jackson.databind.node.ObjectNode) jvs.getJsonNode(), hitorroResponse, session);
             
             hitorroResponse.end();
             

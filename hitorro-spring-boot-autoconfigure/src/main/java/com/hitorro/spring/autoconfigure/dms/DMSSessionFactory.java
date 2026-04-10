@@ -38,8 +38,15 @@ public class DMSSessionFactory {
      * @return A new DMSSession instance
      */
     public DMSSession createSession() {
-        BaseSession session = com.hitorro.basedms.session.DMSSessionFactory.getFactory().getSession();
-        return (DMSSession) session;  // DMSSession extends BaseSession
+        com.hitorro.util.typesystem.BaseSessionFactory factory = com.hitorro.basedms.session.DMSSessionFactory.getFactory();
+        if (factory == null) {
+            throw new IllegalStateException(
+                "DMSSessionFactory not initialized. This typically happens when ClusterService " +
+                "fails on localhost (127.0.0.1), preventing HibernateService from initializing. " +
+                "Set a real hostname or configure network.disablelocalhostcheck=true in GlobalProperties.");
+        }
+        BaseSession session = factory.getSession();
+        return (DMSSession) session;
     }
     
     /**

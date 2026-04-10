@@ -161,7 +161,7 @@ public class CommandRestController {
             CommandSession session = new CommandSession();
             
             // Execute the command using the Hitorro CommandRegistry infrastructure
-            boolean success = registry.execute("", commandName, jvs, response, session);
+            boolean success = registry.execute("", commandName, (com.fasterxml.jackson.databind.node.ObjectNode) jvs.getJsonNode(), response, session);
             
             // End the response to flush output
             response.end();
