@@ -30,7 +30,7 @@ import org.springframework.core.env.PropertySource;
  */
 public class HitorroPropertySource extends PropertySource<HTProperties> {
 
-    public static final String HITORRO_PROPERTY_SOURCE_NAME = "hitorroProperties";
+    public static String HITORRO_PROPERTY_SOURCE_NAME = "hitorroProperties";
 
     public HitorroPropertySource() {
         super(HITORRO_PROPERTY_SOURCE_NAME, HTProperties.getProperties());
