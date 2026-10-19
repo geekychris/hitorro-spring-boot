@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="Hitorro Spring Boot logo" width="180">
+</p>
+
 # Hitorro Spring Boot Integration
 
 Spring Boot integration for the Hitorro framework, enabling seamless use of Hitorro's services, properties, command framework, and DMS in Spring Boot applications.
