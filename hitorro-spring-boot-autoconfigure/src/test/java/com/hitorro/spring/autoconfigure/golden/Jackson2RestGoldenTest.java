@@ -337,6 +337,12 @@ class Jackson2RestGoldenTest {
         call("commands.execute.add", postJson("/api/commands/execute", "{\"command\":\"golden.add\",\"arguments\":{\"a\":\"2\",\"b\":\"3\"}}"));
         call("commands.execute.jvs", postJson("/api/commands/execute", "{\"command\":\"golden.jvs\"}"));
         call("commands.execute.unknown", postJson("/api/commands/execute", "{\"command\":\"golden.nope\"}"));
+        // the request's real fields (the calls above use other names: unknown properties are ignored)
+        call("commands.exec.echo", postJson("/api/commands/execute", "{\"commandName\":\"golden.echo\",\"parameters\":{\"message\":\"hi \\u00e9\"}}"));
+        call("commands.exec.add", postJson("/api/commands/execute", "{\"commandName\":\"golden.add\",\"parameters\":{\"a\":2,\"b\":\"3\"}}"));
+        call("commands.exec.jvs", postJson("/api/commands/execute", "{\"commandName\":\"golden.jvs\"}"));
+        call("commands.exec.fail", postJson("/api/commands/execute", "{\"commandName\":\"golden.fail\"}"));
+        call("commands.exec.unknown", postJson("/api/commands/execute", "{\"commandName\":\"golden.nope\",\"parameters\":{}}"));
 
         // JVSRestController
         call("jvs.parse", post("/api/jvs/parse").contentType(json).accept(json).content("{\"a\":1}"));
