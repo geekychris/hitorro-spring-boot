@@ -26,6 +26,8 @@
         
         <!-- Hitorro version -->
         <hitorro.version>3.0.2</hitorro.version>
+        <!-- 3.1.0 is the Hibernate 7 port, which Spring Boot 4 requires -->
+        <hitorro-basedms.version>3.1.0</hitorro-basedms.version>
         
         <!-- Maven plugin versions -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
@@ -435,7 +437,7 @@
             <dependency>
                 <groupId>com.hitorro</groupId>
                 <artifactId>hitorro-basedms</artifactId>
-                <version>${hitorro.version}</version>
+                <version>${hitorro-basedms.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.hitorro</groupId>
