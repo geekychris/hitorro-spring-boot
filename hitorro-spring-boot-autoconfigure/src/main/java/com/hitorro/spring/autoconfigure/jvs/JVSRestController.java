@@ -21,7 +21,7 @@
  */
 package com.hitorro.spring.autoconfigure.jvs;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.hitorro.jsontypesystem.JVS;
 import com.hitorro.jsontypesystem.Type;
 import org.springframework.http.ResponseEntity;
@@ -144,7 +144,7 @@ public class JVSRestController {
                     
                     JsonNode nodeVal = jvs.get(propPath);
                     if (nodeVal != null) {
-                        values.put(propPath, nodeVal.toString());
+                        values.put(propPath, com.hitorro.util.json.JsonMappers.json().writeValueAsString(nodeVal));   // toString() fails past 500 levels on Jackson 3
                     }
                 } catch (Exception e) {
                     values.put(propPath, "ERROR: " + e.getMessage());

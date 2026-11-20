@@ -21,7 +21,7 @@
  */
 package com.hitorro.spring.autoconfigure.rest;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.hitorro.spring.autoconfigure.commands.CommandRegistrationManager;
 import com.hitorro.util.commandandcontrol.*;
 import com.hitorro.util.commandandcontrol.ano.CommandDef;

@@ -7,7 +7,7 @@
 
     <groupId>com.hitorro</groupId>
     <artifactId>hitorro-spring-boot-parent</artifactId>
-    <version>3.1.0</version>
+    <version>4.0.0</version>
     <packaging>pom</packaging>
 
     <name>Hitorro Spring Boot Integration</name>
@@ -25,9 +25,9 @@
         <spring-boot.version>4.1.3</spring-boot.version>
         
         <!-- Hitorro version -->
-        <hitorro.version>3.0.2</hitorro.version>
-        <!-- 3.1.0 is the Hibernate 7 port, which Spring Boot 4 requires -->
-        <hitorro-basedms.version>3.1.0</hitorro-basedms.version>
+        <hitorro.version>4.0.0</hitorro.version>
+        <!-- basedms 3.1.0+ is the Hibernate 7 port, which Spring Boot 4 requires -->
+        <hitorro-basedms.version>4.0.0</hitorro-basedms.version>
         
         <!-- Maven plugin versions -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
@@ -100,6 +100,14 @@
                 <artifactId>jline-terminal-jni</artifactId>
                 <version>3.30.17</version>
             </dependency>
+            <dependency>
+                <groupId>tools.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>3.1.8</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Jackson 2 still arrives through third-party libraries: pinned for security -->
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
@@ -407,7 +415,7 @@
         <dependency>
             <groupId>com.hitorro</groupId>
             <artifactId>hitorro-streams</artifactId>
-            <version>3.0.2</version>
+            <version>${hitorro.version}</version>
         </dependency>
             <!-- Spring Boot BOM -->
             <dependency>

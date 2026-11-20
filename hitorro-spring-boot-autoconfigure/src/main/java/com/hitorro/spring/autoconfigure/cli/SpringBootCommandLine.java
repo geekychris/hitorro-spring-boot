@@ -21,7 +21,7 @@
  */
 package com.hitorro.spring.autoconfigure.cli;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.hitorro.util.cmdline.BaseCommandLine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
