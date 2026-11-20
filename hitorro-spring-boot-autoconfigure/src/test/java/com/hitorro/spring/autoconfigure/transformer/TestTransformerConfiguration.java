@@ -22,7 +22,7 @@
 package com.hitorro.spring.autoconfigure.transformer;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
 
 /**
  * Test configuration for Transformer REST API integration tests.

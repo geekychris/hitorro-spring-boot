@@ -51,7 +51,7 @@ public class HitorroServiceAutoConfiguration {
     @Bean
     public SpringDatabaseConfigProvider springDatabaseConfigProvider(
             javax.sql.DataSource dataSource,
-            org.springframework.boot.autoconfigure.jdbc.DataSourceProperties dataSourceProperties) {
+            org.springframework.boot.jdbc.autoconfigure.DataSourceProperties dataSourceProperties) {
         logger.info("Creating Spring Database Config Provider");
         return new SpringDatabaseConfigProvider(dataSource, dataSourceProperties);
     }

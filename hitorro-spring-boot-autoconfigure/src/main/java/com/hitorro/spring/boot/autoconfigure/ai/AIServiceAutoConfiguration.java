@@ -27,10 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.ollama.OllamaChatModel;
-import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.ollama.api.OllamaApi;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -51,7 +48,7 @@ public class AIServiceAutoConfiguration {
     
     /**
      * Wrap the Spring AI ChatClient and EmbeddingModel beans that are auto-configured
-     * by the spring-ai-ollama-spring-boot-starter.
+     * by spring-ai-starter-model-ollama (Spring AI 2.x).
      * 
      * Note: This assumes you have configured Spring AI properties in application.yml:
      * 
@@ -60,12 +57,10 @@ public class AIServiceAutoConfiguration {
      *     ollama:
      *       base-url: http://localhost:11434
      *       chat:
-     *         options:
-     *           model: llama3.2
-     *           temperature: 0.7
+     *         model: llama3.2       # Spring AI 2.x; chat.options.model is deprecated
+     *         temperature: 0.7
      *       embedding:
-     *         options:
-     *           model: nomic-embed-text
+     *         model: nomic-embed-text
      */
     @Bean
     public AIService aiService(ChatClient.Builder chatClientBuilder, 
