@@ -21,7 +21,7 @@
  */
 package com.hitorro.spring.autoconfigure.rest;
 
-import com.hitorro.jsontypesystem.JVS;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.hitorro.spring.autoconfigure.commands.CommandRegistrationManager;
 import com.hitorro.util.commandandcontrol.*;
 import com.hitorro.util.commandandcontrol.ano.CommandDef;
@@ -338,7 +338,7 @@ public class HitorroRestControllerTest {
     )
     public static class StreamingCsvCommand extends Command {
         @Override
-        public boolean execute(String rawValue, JVS args, Response response, 
+        public boolean execute(String rawValue, JsonNode args, Response response, 
                               CommandSession session, RestOperations operation) throws Exception {
             
             HttpServletResponse servletResp = response.getHttpResponse();
@@ -376,7 +376,7 @@ public class HitorroRestControllerTest {
     )
     public static class CustomHeadersCommand extends Command {
         @Override
-        public boolean execute(String rawValue, JVS args, Response response,
+        public boolean execute(String rawValue, JsonNode args, Response response,
                               CommandSession session, RestOperations operation) throws Exception {
             
             HttpServletResponse servletResp = response.getHttpResponse();
@@ -406,7 +406,7 @@ public class HitorroRestControllerTest {
     )
     public static class LargeDatasetCommand extends Command {
         @Override
-        public boolean execute(String rawValue, JVS args, Response response,
+        public boolean execute(String rawValue, JsonNode args, Response response,
                               CommandSession session, RestOperations operation) throws Exception {
             
             HttpServletResponse servletResp = response.getHttpResponse();
@@ -443,7 +443,7 @@ public class HitorroRestControllerTest {
     )
     public static class RequestInfoCommand extends Command {
         @Override
-        public boolean execute(String rawValue, JVS args, Response response,
+        public boolean execute(String rawValue, JsonNode args, Response response,
                               CommandSession session, RestOperations operation) throws Exception {
             
             HttpServletRequest req = response.getHttpRequest();
@@ -470,7 +470,7 @@ public class HitorroRestControllerTest {
     )
     public static class ResponseHeadersCommand extends Command {
         @Override
-        public boolean execute(String rawValue, JVS args, Response response,
+        public boolean execute(String rawValue, JsonNode args, Response response,
                               CommandSession session, RestOperations operation) throws Exception {
             
             HttpServletResponse servletResp = response.getHttpResponse();
@@ -495,7 +495,7 @@ public class HitorroRestControllerTest {
     )
     public static class MultiMethodCommand extends Command {
         @Override
-        public boolean execute(String rawValue, JVS args, Response response,
+        public boolean execute(String rawValue, JsonNode args, Response response,
                               CommandSession session, RestOperations operation) throws Exception {
             
             response.addRow("method", operation.toString());
