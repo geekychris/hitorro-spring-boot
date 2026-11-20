@@ -35,3 +35,7 @@ commands.exec.fail=200 application/json {"success":true,"result":null,"error":nu
 commands.exec.unknown=404 application/json {"success":false,"result":null,"error":"Command not found: golden.nope","executionTimeMs":<ms>}
 jvs.parse=200 application/json {"success":true,"typeName":"unknown","hasType":false}
 jvs.query=200 application/json {"success":true,"values":{"s":"x","l":"ERROR: Cannot invoke \\"String.length()\\" because \\"text\\" is null","n":"ERROR: Cannot invoke \\"String.length()\\" because \\"text\\" is null","o":"ERROR: Cannot invoke \\"String.length()\\" because \\"text\\" is null"}}
+actuator.health=200 application/json {"status":"UP","components":{"db":{"status":"UP","details":{"database":"H2","validationQuery":"isValid()"}},"diskSpace":{"status":"UP","details":{"total":<bytes>,"free":<bytes>,"threshold":<bytes>,"path":"<cwd>/.","exists":true}},"livenessState":{"status":"UP"},"ping":{"status":"UP"},"readinessState":{"status":"UP"},"ssl":{"status":"UP","details":{"expiringChains":[],"invalidChains":[],"validChains":[]}}},"groups":["liveness","readiness"]}
+actuator.health.ping=200 application/json {"status":"UP"}
+actuator.info=200 application/json {}
+actuator.metric=200 application/json {"name":"jvm.threads.daemon","description":"The current number of live daemon threads","baseUnit":"threads","measurements":[{"statistic":"VALUE","value":<n>}],"availableTags":[]}

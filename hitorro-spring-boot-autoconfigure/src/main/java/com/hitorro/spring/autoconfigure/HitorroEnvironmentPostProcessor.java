@@ -54,7 +54,10 @@ import java.util.Map;
  * nesting depth 1000 instead of 500, strings up to 20,000,000 characters), the same settings as
  * {@code com.hitorro.util.json.JsonMappers}. They sit at the lowest precedence, so an application
  * can still set any of them itself. {@code HitorroJacksonAutoConfiguration} adds the factory-level
- * Jackson 2 defaults, which have no property.
+ * Jackson 2 defaults, which have no property, and Jackson 2's JDK types. For the actuator it defaults
+ * {@code management.endpoints.jackson.isolated-json-mapper=false}, so that
+ * {@code HitorroEndpointJacksonAutoConfiguration}'s Jackson 2-format endpoint mapper replaces Boot's
+ * plain Jackson 3 one.
  */
 public class HitorroEnvironmentPostProcessor implements EnvironmentPostProcessor {
     
@@ -68,7 +71,10 @@ public class HitorroEnvironmentPostProcessor implements EnvironmentPostProcessor
             "spring.jackson.use-jackson2-defaults", "true",
             "spring.jackson.factory.constraints.read.max-nesting-depth", "1000",
             "spring.jackson.factory.constraints.write.max-nesting-depth", "1000",
-            "spring.jackson.factory.constraints.read.max-string-length", "20000000");
+            "spring.jackson.factory.constraints.read.max-string-length", "20000000",
+            // Boot's isolated actuator mapper is plain Jackson 3 (sorted properties); use
+            // HitorroEndpointJacksonAutoConfiguration's Jackson 2 format instead
+            "management.endpoints.jackson.isolated-json-mapper", "false");
 
     private static final String JACKSON_AUTOCONFIGURATION =
             "org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration";

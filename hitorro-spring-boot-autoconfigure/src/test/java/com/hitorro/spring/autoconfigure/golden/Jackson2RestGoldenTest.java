@@ -53,7 +53,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  * JSON went through Spring Boot's Jackson 2 mapper (spring-boot-jackson2,
  * preferred-json-mapper=jackson2). 4.0.0 serves them through Boot's Jackson 3 mapper with the
  * Jackson 2 defaults and must return byte-identical bodies (only execution times and error
- * timestamps are masked). The source has no Jackson types, so it compiles against both.
+ * timestamps are masked). The source has no Jackson types, so it compiles against both. The actuator
+ * (health with details, info, a metric) is pinned too: its JSON goes through a separate endpoint
+ * mapper.
  * <p>
  * The {@code commands.get/help} keys record an exception on 3.1.0 too: CommandRestController's
  * {@code @PathVariable String commandName} has no name and the module is not compiled with
@@ -70,6 +72,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
                 + "com.hitorro.spring.boot.autoconfigure.ai.AIServiceAutoConfiguration,"
                 + "com.hitorro.spring.autoconfigure.logging.StructuredLoggingConfiguration",
         "hitorro.jvs.rest.enabled=true",
+        "management.endpoints.web.exposure.include=health,info,metrics",
+        "management.endpoint.health.show-details=always",
+        "management.info.java.enabled=false",
         "spring.main.banner-mode=off"
 })
 @AutoConfigureMockMvc
@@ -273,9 +278,14 @@ class Jackson2RestGoldenTest {
         body = body.replaceAll("\"executionTimeMs\":\\d+", "\"executionTimeMs\":<ms>")
                 .replaceAll("\"(timestamp|time)\":\"[^\"]*\"", "\"$1\":<ts>")
                 .replaceAll("\"cause\":\\[[^\\]]*\\]", "\"cause\":[<stack frames>]")
-                .replaceAll("@[0-9a-f]{4,}", "@<hash>");
+                .replaceAll("@[0-9a-f]{4,}", "@<hash>")
+                .replaceAll("\"(total|free|threshold)\":\\d+", "\"$1\":<bytes>")
+                .replace(new java.io.File("").getAbsolutePath(), "<cwd>");
         if (UNORDERED.contains(key)) {
             body = sortFlatObject(body);
+        }
+        if (key.startsWith("actuator.metric")) {
+            body = body.replaceAll("\"value\":[0-9.E-]+", "\"value\":<n>");   // the metric's current value
         }
         String type = r.getResponse().getContentType();
         out.put(key, r.getResponse().getStatus() + " " + type + " " + body.replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "\\r"));
@@ -347,6 +357,12 @@ class Jackson2RestGoldenTest {
         // JVSRestController
         call("jvs.parse", post("/api/jvs/parse").contentType(json).accept(json).content("{\"a\":1}"));
         call("jvs.query", postJson("/api/jvs/query", "{\"document\":\"{\\\"s\\\":\\\"x\\\",\\\"n\\\":5,\\\"o\\\":{\\\"k\\\":[1,2]},\\\"l\\\":[\\\"a\\\",\\\"b\\\"]}\",\"properties\":[\"s\",\"n\",\"o\",\"l\",\"missing\"]}"));
+
+        // the actuator, through its endpoint JSON mapper (Boot 4's own is plain Jackson 3: sorted keys)
+        call("actuator.health", get("/actuator/health").accept(json));
+        call("actuator.health.ping", get("/actuator/health/ping").accept(json));
+        call("actuator.info", get("/actuator/info").accept(json));
+        call("actuator.metric", get("/actuator/metrics/jvm.threads.daemon").accept(json));
 
         String record = System.getProperty("golden.record");
         if (record != null) {

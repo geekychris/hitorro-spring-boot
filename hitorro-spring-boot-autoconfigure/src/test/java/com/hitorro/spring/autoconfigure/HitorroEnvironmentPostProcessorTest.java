@@ -43,6 +43,8 @@ class HitorroEnvironmentPostProcessorTest {
         assertEquals("1000", environment.getProperty("spring.jackson.factory.constraints.read.max-nesting-depth"));
         assertEquals("1000", environment.getProperty("spring.jackson.factory.constraints.write.max-nesting-depth"));
         assertEquals("20000000", environment.getProperty("spring.jackson.factory.constraints.read.max-string-length"));
+        assertEquals("false", environment.getProperty("management.endpoints.jackson.isolated-json-mapper"),
+                "Boot's plain Jackson 3 actuator mapper is replaced by HitorroEndpointJacksonAutoConfiguration's");
         assertNull(environment.getProperty("spring.http.converters.preferred-json-mapper"),
                 "the Jackson 2 bridge setting is gone");
     }

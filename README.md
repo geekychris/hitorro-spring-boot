@@ -345,9 +345,13 @@ sets these defaults at the lowest precedence (set any of them yourself to overri
 | `spring.jackson.factory.constraints.read.max-nesting-depth` | `1000` | Jackson 2.18's limit (Jackson 3: 500) |
 | `spring.jackson.factory.constraints.write.max-nesting-depth` | `1000` | same |
 | `spring.jackson.factory.constraints.read.max-string-length` | `20000000` | Jackson 2.18's limit (Jackson 3: 100,000,000) |
+| `management.endpoints.jackson.isolated-json-mapper` | `false` | Boot 4's isolated actuator mapper is plain Jackson 3 (sorted keys); the starter's Jackson 2-format endpoint mapper replaces it |
 
 `HitorroJacksonAutoConfiguration` adds the factory-level Jackson 2 defaults (no property exists for
-them) and writes `Locale` values as `fr_CA` (Jackson 2) rather than `fr-CA` (Jackson 3).
+them) and hitorro-core's `Jackson2JdkModule` (JDK types as in Jackson 2.18: `Locale` as `fr_CA`,
+not `fr-CA`; `Month` as `NOVEMBER`, not `10`). `HitorroEndpointJacksonAutoConfiguration` gives the
+actuator (health, info, metrics, ...) the JSON of Boot's former Jackson 2 endpoint mapper (declaration
+order, ISO dates, NON_NULL).
 `Jackson2RestGoldenTest` checks that the starter's REST responses are byte-identical to 3.1.0's.
 
 ## Building from Source
