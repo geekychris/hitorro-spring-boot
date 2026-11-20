@@ -83,7 +83,7 @@ public class HitorroCliAutoConfiguration {
      * This provides a Spring-native CLI experience.
      */
     @Bean
-    @ConditionalOnClass(name = "org.springframework.shell.standard.ShellComponent")
+    @ConditionalOnClass(name = "org.springframework.shell.core.command.annotation.Command")
     @ConditionalOnProperty(prefix = "hitorro.cli", name = "spring-shell-enabled", havingValue = "true", matchIfMissing = true)
     public SpringShellCommandAdapter springShellCommandAdapter() {
         logger.info("Configuring Spring Shell integration for Hitorro commands");

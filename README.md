@@ -26,7 +26,7 @@ Add the starter to your `pom.xml`:
 <dependency>
     <groupId>com.hitorro</groupId>
     <artifactId>hitorro-spring-boot-starter</artifactId>
-    <version>1.0.0</version>
+    <version>3.1.0</version>
 </dependency>
 ```
 
@@ -326,9 +326,18 @@ public class MyBusinessLogic {
 ## Requirements
 
 - Java 21+
-- Spring Boot 3.2+
+- Spring Boot 4.1+ (Spring Framework 7). Starter 3.1.0 is the first Boot 4 release; use 1.0.0 for Boot 3.
+- Spring AI 2.0.x (optional, for the Ollama AI service; starter `spring-ai-starter-model-ollama`)
 - Hitorro 3.0.0+
 - Maven 3.8+
+
+### JSON on Spring Boot 4
+
+Spring Boot 4 writes HTTP JSON with Jackson 3 (`tools.jackson`). HiTorro works with Jackson 2
+(`com.fasterxml.jackson`) `JsonNode`s, which Jackson 3 would write as a dump of the node's getters.
+The starter therefore brings `spring-boot-jackson2` and defaults
+`spring.http.converters.preferred-json-mapper=jackson2` (lowest precedence; set the property
+yourself to override it).
 
 ## Building from Source
 

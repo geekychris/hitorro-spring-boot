@@ -28,7 +28,7 @@ import com.hitorro.basedms.db.DatabaseConfigProvider;
 import com.hitorro.jsontypesystem.propreaders.JVSProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 
 import javax.sql.DataSource;
 import java.sql.Connection;

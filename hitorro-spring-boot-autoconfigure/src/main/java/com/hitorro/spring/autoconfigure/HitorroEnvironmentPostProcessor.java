@@ -23,10 +23,14 @@ package com.hitorro.spring.autoconfigure;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.EnvironmentPostProcessor;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.util.ClassUtils;
+
+import java.util.Map;
 
 /**
  * Environment post-processor that ensures HT_BIN and HT_HOME system properties
@@ -41,10 +45,25 @@ import org.springframework.core.env.Environment;
  *   <li>Environment variables (export HT_BIN=...)</li>
  *   <li>Spring configuration (hitorro.jvs.type-definitions-path)</li>
  * </ol>
+ *
+ * <p>It also defaults {@code spring.http.converters.preferred-json-mapper} to
+ * {@code jackson2} when Spring Boot's Jackson 2 support is on the classpath.
+ * Spring Boot 4 serializes HTTP bodies with Jackson 3 ({@code tools.jackson}) by
+ * default, while HiTorro APIs return {@code com.fasterxml.jackson} {@code JsonNode}s.
+ * The default sits at the lowest precedence, so an application can still set
+ * the property itself.
  */
 public class HitorroEnvironmentPostProcessor implements EnvironmentPostProcessor {
     
     private static final Logger logger = LoggerFactory.getLogger(HitorroEnvironmentPostProcessor.class);
+
+    /** Name of the lowest-precedence property source holding HiTorro's defaults. */
+    public static final String DEFAULTS_PROPERTY_SOURCE = "hitorroDefaults";
+
+    static final String PREFERRED_JSON_MAPPER = "spring.http.converters.preferred-json-mapper";
+
+    private static final String JACKSON2_AUTOCONFIGURATION =
+            "org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration";
     
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
@@ -56,6 +75,22 @@ public class HitorroEnvironmentPostProcessor implements EnvironmentPostProcessor
         
         // Configure ht_data (derived from HT_BIN)
         configureHtData();
+
+        // Keep HTTP JSON on Jackson 2 unless the application chose otherwise
+        configureJsonMapperDefault(environment, application);
+    }
+
+    private void configureJsonMapperDefault(ConfigurableEnvironment environment, SpringApplication application) {
+        ClassLoader classLoader = application != null ? application.getClassLoader() : null;
+        if (!ClassUtils.isPresent(JACKSON2_AUTOCONFIGURATION, classLoader)) {
+            return;
+        }
+        if (environment.getPropertySources().contains(DEFAULTS_PROPERTY_SOURCE)) {
+            return;
+        }
+        environment.getPropertySources().addLast(
+                new MapPropertySource(DEFAULTS_PROPERTY_SOURCE, Map.of(PREFERRED_JSON_MAPPER, "jackson2")));
+        logger.debug("Defaulted {}=jackson2 (HiTorro returns Jackson 2 JsonNode)", PREFERRED_JSON_MAPPER);
     }
     
     private void configureHtBin(Environment environment) {
