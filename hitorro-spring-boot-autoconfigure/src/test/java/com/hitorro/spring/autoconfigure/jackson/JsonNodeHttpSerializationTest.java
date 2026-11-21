@@ -21,9 +21,13 @@
  */
 package com.hitorro.spring.autoconfigure.jackson;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import com.hitorro.util.json.JsonMappers;
+import tools.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -32,7 +36,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,18 +46,20 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Spring Boot 4 serializes HTTP bodies with Jackson 3 by default. HiTorro controllers
- * return Jackson 2 ({@code com.fasterxml.jackson}) JsonNodes, so the starter keeps
- * HTTP JSON on Jackson 2. These tests prove a JsonNode / ObjectNode returned from a
- * controller is written as plain JSON, not as a bean dump of the node's getters.
+ * HiTorro 4.0.0 is on Jackson 3, as is Spring Boot 4's HTTP JSON. These tests prove a
+ * JsonNode / ObjectNode returned from a controller is written as plain JSON, not as a bean
+ * dump of the node's getters, through Boot's Jackson 3 converter configured with the Jackson 2
+ * format.
  *
- * <p>No property is set here: the default comes from {@code HitorroEnvironmentPostProcessor}.
+ * <p>No property is set here: the defaults come from {@code HitorroEnvironmentPostProcessor}.
  */
 @WebMvcTest(JsonNodeHttpSerializationTest.JsonNodeController.class)
 class JsonNodeHttpSerializationTest {
@@ -87,15 +93,26 @@ class JsonNodeHttpSerializationTest {
     }
 
     @Test
-    void preferredJsonMapperDefaultsToJackson2() {
-        assertEquals("jackson2", environment.getProperty("spring.http.converters.preferred-json-mapper"));
+    void jackson3ConverterWithJackson2Format() {
+        assertNull(environment.getProperty("spring.http.converters.preferred-json-mapper"),
+                "the Jackson 2 bridge is gone");
         List<HttpMessageConverter<?>> converters = handlerAdapter.getMessageConverters();
         HttpMessageConverter<?> writer = converters.stream()
                 .filter(c -> c.canWrite(ObjectNode.class, MediaType.APPLICATION_JSON))
                 .findFirst()
                 .orElseThrow();
-        assertInstanceOf(MappingJackson2HttpMessageConverter.class, writer,
-                "the converter writing ObjectNode as JSON should be Jackson 2, got " + writer.getClass().getName());
+        JacksonJsonHttpMessageConverter jackson = assertInstanceOf(JacksonJsonHttpMessageConverter.class, writer,
+                "the converter writing ObjectNode as JSON should be Jackson 3, got " + writer.getClass().getName());
+        // Boot's mapper has the Jackson 2 format (spring.jackson.use-jackson2-defaults) and 2.18 limits
+        tools.jackson.databind.json.JsonMapper mapper = (tools.jackson.databind.json.JsonMapper) jackson.getMapper();
+        assertFalse(mapper.isEnabled(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY));
+        assertFalse(mapper.isEnabled(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS), "Boot's Jackson 2 default: ISO dates");
+        assertFalse(mapper.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES));
+        assertEquals(1000, mapper.tokenStreamFactory().streamReadConstraints().getMaxNestingDepth());
+        assertEquals(1000, mapper.tokenStreamFactory().streamWriteConstraints().getMaxNestingDepth());
+        assertEquals(20_000_000, mapper.tokenStreamFactory().streamReadConstraints().getMaxStringLength());
+        assertFalse(mapper.tokenStreamFactory().isEnabled(tools.jackson.core.StreamReadFeature.USE_FAST_DOUBLE_PARSER),
+                "factory-level Jackson 2 defaults (HitorroJacksonAutoConfiguration)");
     }
 
     @SpringBootConfiguration
@@ -106,7 +123,7 @@ class JsonNodeHttpSerializationTest {
     @RestController
     static class JsonNodeController {
 
-        private final ObjectMapper mapper = new ObjectMapper();
+        private final ObjectMapper mapper = JsonMappers.json();
 
         @GetMapping("/test/object-node")
         ObjectNode objectNode() {

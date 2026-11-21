@@ -21,9 +21,9 @@
  */
 package com.hitorro.spring.autoconfigure.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import com.hitorro.basedms.db.DatabaseConfigProvider;
 import com.hitorro.jsontypesystem.propreaders.JVSProperties;
 import org.slf4j.Logger;
@@ -49,7 +49,7 @@ public class SpringDatabaseConfigProvider extends DatabaseConfigProvider {
     
     private final DataSource dataSource;
     private final DataSourceProperties dataSourceProperties;
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = com.hitorro.util.json.JsonMappers.json();
     
     // Cache the Spring DB config
     private ObjectNode springDbConfig;

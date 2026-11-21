@@ -289,7 +289,7 @@ public class HitorroRestController {
             // Execute command through Hitorro's CommandRegistry
             // This is the key: we're using Hitorro's infrastructure, not reimplementing
             CommandSession session = new CommandSession(false);
-            boolean success = registry.execute("", commandName, (com.fasterxml.jackson.databind.node.ObjectNode) jvs.getJsonNode(), hitorroResponse, session);
+            boolean success = registry.execute("", commandName, (tools.jackson.databind.node.ObjectNode) jvs.getJsonNode(), hitorroResponse, session);
             
             hitorroResponse.end();
             
@@ -354,8 +354,8 @@ public class HitorroRestController {
             
             try {
                 // Parse JSON line using Jackson
-                com.fasterxml.jackson.databind.ObjectMapper mapper = 
-                    new com.fasterxml.jackson.databind.ObjectMapper();
+                tools.jackson.databind.ObjectMapper mapper =
+                    com.hitorro.util.json.JsonMappers.json();
                 Object obj = mapper.readValue(line, Object.class);
                 rows.add(obj);
             } catch (Exception e) {

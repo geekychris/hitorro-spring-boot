@@ -29,23 +29,31 @@ import org.springframework.core.env.MapPropertySource;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class HitorroEnvironmentPostProcessorTest {
 
-    private static final String KEY = "spring.http.converters.preferred-json-mapper";
+    private static final String KEY = "spring.jackson.use-jackson2-defaults";
 
     @Test
-    void defaultsPreferredJsonMapperToJackson2() {
+    void defaultsBootsJacksonMapperToJackson2Format() {
         StandardEnvironment environment = new StandardEnvironment();
         new HitorroEnvironmentPostProcessor().postProcessEnvironment(environment, new SpringApplication());
-        assertEquals("jackson2", environment.getProperty(KEY));
+        assertEquals("true", environment.getProperty(KEY));
+        assertEquals("1000", environment.getProperty("spring.jackson.factory.constraints.read.max-nesting-depth"));
+        assertEquals("1000", environment.getProperty("spring.jackson.factory.constraints.write.max-nesting-depth"));
+        assertEquals("20000000", environment.getProperty("spring.jackson.factory.constraints.read.max-string-length"));
+        assertEquals("false", environment.getProperty("management.endpoints.jackson.isolated-json-mapper"),
+                "Boot's plain Jackson 3 actuator mapper is replaced by HitorroEndpointJacksonAutoConfiguration's");
+        assertNull(environment.getProperty("spring.http.converters.preferred-json-mapper"),
+                "the Jackson 2 bridge setting is gone");
     }
 
     @Test
     void applicationSettingWins() {
         StandardEnvironment environment = new StandardEnvironment();
-        environment.getPropertySources().addFirst(new MapPropertySource("app", Map.of(KEY, "jackson")));
+        environment.getPropertySources().addFirst(new MapPropertySource("app", Map.of(KEY, "false")));
         new HitorroEnvironmentPostProcessor().postProcessEnvironment(environment, new SpringApplication());
-        assertEquals("jackson", environment.getProperty(KEY));
+        assertEquals("false", environment.getProperty(KEY));
     }
 }

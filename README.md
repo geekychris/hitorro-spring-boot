@@ -26,7 +26,7 @@ Add the starter to your `pom.xml`:
 <dependency>
     <groupId>com.hitorro</groupId>
     <artifactId>hitorro-spring-boot-starter</artifactId>
-    <version>3.1.0</version>
+    <version>4.0.0</version>
 </dependency>
 ```
 
@@ -327,17 +327,32 @@ public class MyBusinessLogic {
 
 - Java 21+
 - Spring Boot 4.1+ (Spring Framework 7). Starter 3.1.0 is the first Boot 4 release; use 1.0.0 for Boot 3.
+  Starter 4.0.0 is HiTorro 4.0.0 (Jackson 3).
 - Spring AI 2.0.x (optional, for the Ollama AI service; starter `spring-ai-starter-model-ollama`)
-- Hitorro 3.0.0+
+- Hitorro 4.0.0 (starter 4.0.0) or 3.0.x (starter 3.1.0)
 - Maven 3.8+
 
 ### JSON on Spring Boot 4
 
-Spring Boot 4 writes HTTP JSON with Jackson 3 (`tools.jackson`). HiTorro works with Jackson 2
-(`com.fasterxml.jackson`) `JsonNode`s, which Jackson 3 would write as a dump of the node's getters.
-The starter therefore brings `spring-boot-jackson2` and defaults
-`spring.http.converters.preferred-json-mapper=jackson2` (lowest precedence; set the property
-yourself to override it).
+Spring Boot 4 and HiTorro 4.0.0 both use Jackson 3 (`tools.jackson`), so HTTP JSON goes through
+Boot's own auto-configured `JsonMapper` (no Jackson 2 bridge any more). To keep the JSON format
+HiTorro applications had with Jackson 2 (starter 3.1.0 used `spring-boot-jackson2`), the starter
+sets these defaults at the lowest precedence (set any of them yourself to override it):
+
+| Property | Default | Why |
+|---|---|---|
+| `spring.jackson.use-jackson2-defaults` | `true` | Jackson 2's defaults plus the ones Boot used for Jackson 2: properties in declaration order, ISO dates, unknown properties ignored, ... |
+| `spring.jackson.factory.constraints.read.max-nesting-depth` | `1000` | Jackson 2.18's limit (Jackson 3: 500) |
+| `spring.jackson.factory.constraints.write.max-nesting-depth` | `1000` | same |
+| `spring.jackson.factory.constraints.read.max-string-length` | `20000000` | Jackson 2.18's limit (Jackson 3: 100,000,000) |
+| `management.endpoints.jackson.isolated-json-mapper` | `false` | Boot 4's isolated actuator mapper is plain Jackson 3 (sorted keys); the starter's Jackson 2-format endpoint mapper replaces it |
+
+`HitorroJacksonAutoConfiguration` adds the factory-level Jackson 2 defaults (no property exists for
+them) and hitorro-core's `Jackson2JdkModule` (JDK types as in Jackson 2.18: `Locale` as `fr_CA`,
+not `fr-CA`; `Month` as `NOVEMBER`, not `10`). `HitorroEndpointJacksonAutoConfiguration` gives the
+actuator (health, info, metrics, ...) the JSON of Boot's former Jackson 2 endpoint mapper (declaration
+order, ISO dates, NON_NULL).
+`Jackson2RestGoldenTest` checks that the starter's REST responses are byte-identical to 3.1.0's.
 
 ## Building from Source
 
@@ -352,6 +367,8 @@ mvn clean install
 | Hitorro Version | Spring Boot Version | Java Version |
 |----------------|---------------------|--------------|
 | 3.0.0          | 3.2+               | 21+          |
+| 3.1.0 (HiTorro 3.0.x, Jackson 2) | 4.1+ | 21+   |
+| 4.0.0 (HiTorro 4.0.0, Jackson 3) | 4.1+ | 21+   |
 
 ## Contributing
 

@@ -1,4 +1,6 @@
 com.hitorro.spring.autoconfigure.service.HitorroServiceAutoConfiguration
+com.hitorro.spring.autoconfigure.jackson.HitorroJacksonAutoConfiguration
+com.hitorro.spring.autoconfigure.jackson.HitorroEndpointJacksonAutoConfiguration
 com.hitorro.spring.autoconfigure.properties.HitorroPropertySourceConfiguration
 com.hitorro.spring.autoconfigure.commands.CommandAutoConfiguration
 com.hitorro.spring.autoconfigure.web.CommandEndpointAutoConfiguration

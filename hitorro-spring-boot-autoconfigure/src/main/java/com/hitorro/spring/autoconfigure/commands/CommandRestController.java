@@ -161,7 +161,7 @@ public class CommandRestController {
             CommandSession session = new CommandSession();
             
             // Execute the command using the Hitorro CommandRegistry infrastructure
-            boolean success = registry.execute("", commandName, (com.fasterxml.jackson.databind.node.ObjectNode) jvs.getJsonNode(), response, session);
+            boolean success = registry.execute("", commandName, (tools.jackson.databind.node.ObjectNode) jvs.getJsonNode(), response, session);
             
             // End the response to flush output
             response.end();
@@ -197,8 +197,8 @@ public class CommandRestController {
         }
         
         try {
-            com.fasterxml.jackson.databind.ObjectMapper mapper = 
-                new com.fasterxml.jackson.databind.ObjectMapper();
+            tools.jackson.databind.ObjectMapper mapper =
+                com.hitorro.util.json.JsonMappers.json();
             
             // Split by newlines and parse each JSON object
             String[] lines = ndjsonOutput.trim().split("\n");

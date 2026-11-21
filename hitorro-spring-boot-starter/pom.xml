@@ -8,7 +8,7 @@
     <parent>
         <groupId>com.hitorro</groupId>
         <artifactId>hitorro-spring-boot-parent</artifactId>
-        <version>3.1.0</version>
+        <version>4.0.0</version>
     </parent>
 
     <artifactId>hitorro-spring-boot-starter</artifactId>
@@ -32,12 +32,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
-        </dependency>
-        <!-- Keep Jackson 2 for HTTP JSON: HiTorro APIs return com.fasterxml.jackson JsonNode.
-             The autoconfigure module defaults spring.http.converters.preferred-json-mapper=jackson2. -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-jackson2</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

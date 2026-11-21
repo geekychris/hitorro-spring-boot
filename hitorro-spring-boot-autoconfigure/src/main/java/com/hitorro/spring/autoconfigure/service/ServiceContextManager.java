@@ -234,8 +234,8 @@ public class ServiceContextManager implements ApplicationContextAware, Initializ
                     logger.info("Overlaying {} custom properties from Spring configuration", 
                                properties.getHitorroProperties().size());
                     
-                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-                    com.fasterxml.jackson.databind.node.ObjectNode customNode = mapper.createObjectNode();
+                    tools.jackson.databind.ObjectMapper mapper = com.hitorro.util.json.JsonMappers.json();
+                    tools.jackson.databind.node.ObjectNode customNode = mapper.createObjectNode();
                     addMapToNode(customNode, properties.getHitorroProperties(), mapper, "");
                     
                     // Merge custom properties into loaded props
@@ -245,13 +245,13 @@ public class ServiceContextManager implements ApplicationContextAware, Initializ
                 
                 // Convert Spring Boot test properties to JVS format
                 if (properties.getTest() != null) {
-                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-                    com.fasterxml.jackson.databind.node.ObjectNode testNode = mapper.createObjectNode();
+                    tools.jackson.databind.ObjectMapper mapper = com.hitorro.util.json.JsonMappers.json();
+                    tools.jackson.databind.node.ObjectNode testNode = mapper.createObjectNode();
                     
                     // Convert hitorro.test.run-on-startup to test.runonstartup (JVS property format)
                     testNode.put("runonstartup", properties.getTest().isRunOnStartup());
                     
-                    com.fasterxml.jackson.databind.node.ObjectNode rootNode = mapper.createObjectNode();
+                    tools.jackson.databind.node.ObjectNode rootNode = mapper.createObjectNode();
                     rootNode.set("test", testNode);
                     
                     com.hitorro.jsontypesystem.JVS testProps = new com.hitorro.jsontypesystem.JVS(rootNode);
@@ -397,9 +397,9 @@ public class ServiceContextManager implements ApplicationContextAware, Initializ
      * Recursively add map entries to ObjectNode.
      */
     @SuppressWarnings("unchecked")
-    private void addMapToNode(com.fasterxml.jackson.databind.node.ObjectNode node, 
+    private void addMapToNode(tools.jackson.databind.node.ObjectNode node, 
                                java.util.Map<String, Object> map,
-                               com.fasterxml.jackson.databind.ObjectMapper mapper,
+                               tools.jackson.databind.ObjectMapper mapper,
                                String prefix) {
         for (java.util.Map.Entry<String, Object> entry : map.entrySet()) {
             String key = entry.getKey();
@@ -408,7 +408,7 @@ public class ServiceContextManager implements ApplicationContextAware, Initializ
             
             if (value instanceof java.util.Map) {
                 // Nested map - recurse
-                com.fasterxml.jackson.databind.node.ObjectNode nestedNode = mapper.createObjectNode();
+                tools.jackson.databind.node.ObjectNode nestedNode = mapper.createObjectNode();
                 node.set(key, nestedNode);
                 addMapToNode(nestedNode, (java.util.Map<String, Object>) value, mapper, fullPath);
             } else if (value instanceof Boolean) {

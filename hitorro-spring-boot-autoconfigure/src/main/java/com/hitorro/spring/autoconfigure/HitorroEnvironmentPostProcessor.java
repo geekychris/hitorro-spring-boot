@@ -46,12 +46,18 @@ import java.util.Map;
  *   <li>Spring configuration (hitorro.jvs.type-definitions-path)</li>
  * </ol>
  *
- * <p>It also defaults {@code spring.http.converters.preferred-json-mapper} to
- * {@code jackson2} when Spring Boot's Jackson 2 support is on the classpath.
- * Spring Boot 4 serializes HTTP bodies with Jackson 3 ({@code tools.jackson}) by
- * default, while HiTorro APIs return {@code com.fasterxml.jackson} {@code JsonNode}s.
- * The default sits at the lowest precedence, so an application can still set
- * the property itself.
+ * <p>It also gives Spring Boot's auto-configured Jackson 3 {@code JsonMapper} the JSON format
+ * HiTorro applications had with Jackson 2 (HiTorro 3.x served HTTP JSON through Boot's Jackson 2
+ * mapper): {@code spring.jackson.use-jackson2-defaults=true} (Jackson 2's own defaults plus the
+ * defaults Boot used for Jackson 2: declaration-order properties, ISO dates, unknown properties
+ * ignored, ...) and Jackson 2.18's stream limits ({@code spring.jackson.factory.constraints.*}:
+ * nesting depth 1000 instead of 500, strings up to 20,000,000 characters), the same settings as
+ * {@code com.hitorro.util.json.JsonMappers}. They sit at the lowest precedence, so an application
+ * can still set any of them itself. {@code HitorroJacksonAutoConfiguration} adds the factory-level
+ * Jackson 2 defaults, which have no property, and Jackson 2's JDK types. For the actuator it defaults
+ * {@code management.endpoints.jackson.isolated-json-mapper=false}, so that
+ * {@code HitorroEndpointJacksonAutoConfiguration}'s Jackson 2-format endpoint mapper replaces Boot's
+ * plain Jackson 3 one.
  */
 public class HitorroEnvironmentPostProcessor implements EnvironmentPostProcessor {
     
@@ -60,10 +66,18 @@ public class HitorroEnvironmentPostProcessor implements EnvironmentPostProcessor
     /** Name of the lowest-precedence property source holding HiTorro's defaults. */
     public static final String DEFAULTS_PROPERTY_SOURCE = "hitorroDefaults";
 
-    static final String PREFERRED_JSON_MAPPER = "spring.http.converters.preferred-json-mapper";
+    /** Jackson 2's JSON format for Boot's Jackson 3 mapper (see the class comment). */
+    static final Map<String, Object> JSON_DEFAULTS = Map.of(
+            "spring.jackson.use-jackson2-defaults", "true",
+            "spring.jackson.factory.constraints.read.max-nesting-depth", "1000",
+            "spring.jackson.factory.constraints.write.max-nesting-depth", "1000",
+            "spring.jackson.factory.constraints.read.max-string-length", "20000000",
+            // Boot's isolated actuator mapper is plain Jackson 3 (sorted properties); use
+            // HitorroEndpointJacksonAutoConfiguration's Jackson 2 format instead
+            "management.endpoints.jackson.isolated-json-mapper", "false");
 
-    private static final String JACKSON2_AUTOCONFIGURATION =
-            "org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration";
+    private static final String JACKSON_AUTOCONFIGURATION =
+            "org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration";
     
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
@@ -76,21 +90,20 @@ public class HitorroEnvironmentPostProcessor implements EnvironmentPostProcessor
         // Configure ht_data (derived from HT_BIN)
         configureHtData();
 
-        // Keep HTTP JSON on Jackson 2 unless the application chose otherwise
-        configureJsonMapperDefault(environment, application);
+        // Keep HTTP JSON in the Jackson 2 format unless the application chose otherwise
+        configureJsonMapperDefaults(environment, application);
     }
 
-    private void configureJsonMapperDefault(ConfigurableEnvironment environment, SpringApplication application) {
+    private void configureJsonMapperDefaults(ConfigurableEnvironment environment, SpringApplication application) {
         ClassLoader classLoader = application != null ? application.getClassLoader() : null;
-        if (!ClassUtils.isPresent(JACKSON2_AUTOCONFIGURATION, classLoader)) {
+        if (!ClassUtils.isPresent(JACKSON_AUTOCONFIGURATION, classLoader)) {
             return;
         }
         if (environment.getPropertySources().contains(DEFAULTS_PROPERTY_SOURCE)) {
             return;
         }
-        environment.getPropertySources().addLast(
-                new MapPropertySource(DEFAULTS_PROPERTY_SOURCE, Map.of(PREFERRED_JSON_MAPPER, "jackson2")));
-        logger.debug("Defaulted {}=jackson2 (HiTorro returns Jackson 2 JsonNode)", PREFERRED_JSON_MAPPER);
+        environment.getPropertySources().addLast(new MapPropertySource(DEFAULTS_PROPERTY_SOURCE, JSON_DEFAULTS));
+        logger.debug("Defaulted {} (Jackson 2 JSON format for Boot's Jackson 3 mapper)", JSON_DEFAULTS.keySet());
     }
     
     private void configureHtBin(Environment environment) {
